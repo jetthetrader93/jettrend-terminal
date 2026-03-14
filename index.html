@@ -1,29 +1,10 @@
 <!DOCTYPE html>
+<html>
 
-<script>
-
-async function getPrice(symbol){
-
-const res = await fetch(
-`https://curly-dream-6189.jetthetrader93.workers.dev/?symbol=${symbol}`
-)
-
-const data = await res.json()
-
-return parseFloat(data.price)
-
-}
-
-</script>
-
-</body>
-</html>
-
-
-</script>
 <head>
 
 <title>JetTrend Market Terminal</title>
+
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
@@ -143,6 +124,7 @@ JetTrend Market Terminal
 <h3>Market Scanner</h3>
 
 <table>
+
 <thead>
 <tr>
 <th>Symbol</th>
@@ -162,6 +144,7 @@ JetTrend Market Terminal
 <div class="right">
 
 <h3>Alerts</h3>
+
 <div id="alerts"></div>
 
 </div>
@@ -169,8 +152,6 @@ JetTrend Market Terminal
 </div>
 
 <script>
-
-const API="54a78d716fd742ee8eaf5eb3aa2b2b58"
 
 const symbols=[
 "AAPL",
@@ -187,9 +168,10 @@ async function getPrice(symbol){
 
 try{
 
-const url=`https://api.twelvedata.com/price?symbol=${symbol}&apikey=${API}`
+const res=await fetch(
+`https://curly-dream-6189.jetthetrader93.workers.dev/?symbol=${symbol}`
+)
 
-const res=await fetch(url)
 const data=await res.json()
 
 return parseFloat(data.price)
@@ -246,10 +228,19 @@ sym.className="symbol"
 sym.onclick=()=>loadChart(s)
 
 let priceCell=document.createElement("td")
-priceCell.innerText=price ?? "-"
+priceCell.innerText=price ? price.toFixed(2) : "-"
 
 let sigCell=document.createElement("td")
-sigCell.innerText=price ? "ACTIVE" : "NEUTRAL"
+
+if(price){
+
+sigCell.innerText="ACTIVE"
+
+}else{
+
+sigCell.innerText="NEUTRAL"
+
+}
 
 tr.appendChild(sym)
 tr.appendChild(priceCell)
@@ -272,4 +263,5 @@ setInterval(buildScanner,30000)
 </script>
 
 </body>
+
 </html>
