@@ -3,17 +3,6 @@
 <html>
   <script>
 
-async function getPrice(symbol){
-
-const res = await fetch(
-`https://curly-dream-6189.jetthetrader93.workers.dev/?symbol=${symbol}`
-)
-
-const data = await res.json()
-
-return parseFloat(data.price)
-
-}
 
 </script>
 <head>
