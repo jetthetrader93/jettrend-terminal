@@ -16,8 +16,6 @@ background:#0b0b0b;
 color:white;
 }
 
-/* Layout */
-
 .container{
 display:grid;
 grid-template-columns:70px 1fr 360px;
@@ -50,7 +48,6 @@ display:flex;
 align-items:center;
 padding-left:20px;
 border-bottom:1px solid #333;
-font-weight:bold;
 }
 
 .ticker{
@@ -155,8 +152,6 @@ animation:fade 6s forwards;
 100%{opacity:0}
 }
 
-/* News */
-
 .newsCard{
 background:#151515;
 margin-bottom:10px;
@@ -172,11 +167,6 @@ object-fit:cover;
 
 .newsText{
 padding:10px;
-}
-
-.pl{
-font-size:12px;
-color:#ccc;
 }
 
 </style>
@@ -195,9 +185,7 @@ color:#ccc;
 <div>⚡</div>
 </div>
 
-<div class="topbar">
-JetTrend AI Terminal
-</div>
+<div class="topbar">JetTrend AI Terminal</div>
 
 <div class="ticker" id="ticker"></div>
 
@@ -220,13 +208,11 @@ AI Strength
 <h3>AI Scanner</h3>
 
 <table>
-
 <thead>
 <tr>
 <th>Symbol</th>
 <th>Price</th>
 <th>Signal</th>
-<th>Breakout%</th>
 <th>P/L</th>
 </tr>
 </thead>
@@ -253,32 +239,25 @@ AI Strength
 
 <script>
 
-/* SETTINGS */
-
 const API="54a78d716fd742ee8eaf5eb3aa2b2b58"
 
 const symbols=["AAPL","NVDA","TSLA","AMD","META","MSFT","SPY"]
 
 let history={}
-let entryPrices={}
-let alertHistory=[]
-let lastSignals={}
+let entry={}
+let alerts=[]
+let lastSignal={}
 
 symbols.forEach(s=>{
-history[s]=Array(150).fill(100+Math.random()*10)
+history[s]=[]
 })
-
-/* PRICE */
 
 async function getPrice(symbol){
 
 try{
 
-const r = await fetch(
-`https://api.twelvedata.com/price?symbol=${symbol}&apikey=${API}`
-)
-
-const d = await r.json()
+let r=await fetch(`https://api.twelvedata.com/price?symbol=${symbol}&apikey=${API}`)
+let d=await r.json()
 
 return Number(d.price)
 
@@ -290,9 +269,9 @@ return null
 
 }
 
-/* EMA */
-
 function ema(data,p){
+
+if(data.length<p) return data[data.length-1]
 
 let k=2/(p+1)
 let e=data[0]
@@ -304,9 +283,9 @@ return e
 
 }
 
-/* SIGNAL ENGINE */
-
 function signalEngine(h){
+
+if(h.length<20) return "NEUTRAL"
 
 let e9=ema(h.slice(-9),9)
 let e21=ema(h.slice(-21),21)
@@ -319,103 +298,93 @@ return "NEUTRAL"
 
 }
 
-/* PROFIT LOSS */
+function calculatePL(entryPrice,current){
 
-function calculatePL(entry,current){
+if(!entryPrice) return "-"
 
-if(!entry) return "-"
+let profit=current-entryPrice
+let percent=(profit/entryPrice)*100
 
-let diff=current-entry
-let pct=(diff/entry)*100
-
-return `${diff.toFixed(2)} (${pct.toFixed(1)}%)`
+return `${profit.toFixed(2)} (${percent.toFixed(1)}%)`
 
 }
 
-/* ALERT SYSTEM */
+function alertPopup(symbol,signal){
 
-function triggerAlert(symbol,signal){
+if(lastSignal[symbol]===signal) return
 
-if(lastSignals[symbol]===signal) return
-
-lastSignals[symbol]=signal
+lastSignal[symbol]=signal
 
 const div=document.createElement("div")
-
 div.className="alert"
 div.innerText=`${symbol} ${signal} signal`
 
 document.getElementById("alerts").prepend(div)
 
-alertHistory.push(`${new Date().toLocaleTimeString()} ${symbol} ${signal}`)
+alerts.push(`${new Date().toLocaleTimeString()} ${symbol} ${signal}`)
 
 }
 
-/* SCANNER */
-
-async function buildScanner(){
+async function scanner(){
 
 let prices=await Promise.all(symbols.map(getPrice))
 
-let rows=""
+let html=""
 let buys=0
 
 symbols.forEach((s,i)=>{
 
-let p=prices[i]
+let price=prices[i]
 
-if(p) history[s].push(p)
+if(price){
+
+history[s].push(price)
 
 let signal=signalEngine(history[s])
 
-if(signal==="BUY" && !entryPrices[s])
-entryPrices[s]=p
+if(signal==="BUY" && !entry[s])
+entry[s]=price
 
-let pl=calculatePL(entryPrices[s],p)
+let pl=calculatePL(entry[s],price)
 
 if(signal==="BUY") buys++
 
 if(signal!=="NEUTRAL")
-triggerAlert(s,signal)
+alertPopup(s,signal)
 
-let breakout=Math.floor(Math.random()*100)
-
-rows+=`
+html+=`
 <tr>
 <td class="symbol" onclick="loadChart('${s}')">${s}</td>
-<td>${p?p.toFixed(2):"-"}</td>
+<td>${price.toFixed(2)}</td>
 <td class="${signal==="BUY"?"buy":"sell"}">${signal}</td>
-<td>${breakout}%</td>
-<td class="pl">${pl}</td>
+<td>${pl}</td>
 </tr>
 `
 
+}
+
 })
 
-document.getElementById("scanner").innerHTML=rows
+document.getElementById("scanner").innerHTML=html
 
 document.getElementById("strength").innerText=
 Math.round((buys/symbols.length)*100)
 
-renderAlertHistory()
+renderAlerts()
 
 }
 
-/* ALERT HISTORY */
-
-function renderAlertHistory(){
+function renderAlerts(){
 
 let html=""
 
-alertHistory.slice(-10).forEach(a=>{
-html+=`${a}<br>`
+alerts.slice(-10).forEach(a=>{
+html+=a+"<br>"
 })
 
 document.getElementById("alertHistory").innerHTML=html
 
 }
-
-/* CHART */
 
 function loadChart(symbol){
 
@@ -436,17 +405,13 @@ loadNews(symbol)
 
 }
 
-/* NEWS */
-
 async function loadNews(symbol){
 
 try{
 
-const r=await fetch(
-`https://finnhub.io/api/v1/company-news?symbol=${symbol}&from=2024-01-01&to=2026-01-01&token=c3qcq1hr01qgdhqbtk80`
-)
+let r=await fetch(`https://finnhub.io/api/v1/company-news?symbol=${symbol}&from=2024-01-01&to=2026-01-01&token=c3qcq1hr01qgdhqbtk80`)
 
-const news=await r.json()
+let news=await r.json()
 
 let html=""
 
@@ -460,8 +425,7 @@ html+=`
 <div class="newsText">
 
 <b>${n.headline}</b>
-
-<p>${n.summary.slice(0,100)}...</p>
+<p>${n.summary.slice(0,120)}...</p>
 
 <a href="${n.url}" target="_blank">Read</a>
 
@@ -476,13 +440,11 @@ document.getElementById("news").innerHTML=html
 
 }catch{
 
-document.getElementById("news").innerHTML="No news found"
+document.getElementById("news").innerHTML="News unavailable"
 
 }
 
 }
-
-/* TICKER */
 
 async function ticker(){
 
@@ -503,12 +465,10 @@ document.getElementById("ticker").innerHTML=html
 
 }
 
-/* INIT */
-
-buildScanner()
+scanner()
 ticker()
 
-setInterval(buildScanner,5000)
+setInterval(scanner,5000)
 setInterval(ticker,5000)
 
 </script>
