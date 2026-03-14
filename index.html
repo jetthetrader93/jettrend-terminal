@@ -1,11 +1,9 @@
-```html
 <!DOCTYPE html>
 <html>
 
 <head>
 
-<title>JetTrend Terminal</title>
-
+<title>JetTrend AI Terminal</title>
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
@@ -31,7 +29,7 @@ padding-top:20px;
 }
 
 .sidebar div{
-margin:18px 0;
+margin:20px 0;
 opacity:.6;
 cursor:pointer;
 font-size:20px;
@@ -41,33 +39,45 @@ font-size:20px;
 opacity:1;
 }
 
-/* MAIN AREA */
+/* MAIN */
 
 .main{
 margin-left:70px;
+margin-right:260px;
 padding:15px;
 }
 
-/* TOP METRICS */
+/* TOP BAR */
+
+.topbar{
+display:flex;
+justify-content:space-between;
+margin-bottom:10px;
+}
+
+/* TICKER */
+
+.ticker{
+display:flex;
+gap:25px;
+font-size:14px;
+color:#aaa;
+}
+
+/* METRICS */
 
 .metrics{
 display:grid;
-grid-template-columns:repeat(4,1fr);
+grid-template-columns:repeat(3,1fr);
 gap:10px;
 margin-bottom:12px;
 }
 
 .metric{
 background:#141414;
-padding:15px;
-border-radius:5px;
-border:1px solid #1e1e1e;
-}
-
-.metric h4{
-margin:0;
-color:#888;
-font-weight:400;
+padding:14px;
+border-radius:6px;
+border:1px solid #1f1f1f;
 }
 
 .metric span{
@@ -85,13 +95,13 @@ border-collapse:collapse;
 th{
 color:#888;
 text-align:left;
-border-bottom:1px solid #222;
 padding:8px;
+border-bottom:1px solid #222;
 }
 
 td{
-border-bottom:1px solid #1a1a1a;
 padding:8px;
+border-bottom:1px solid #1a1a1a;
 }
 
 .symbol{
@@ -106,7 +116,7 @@ color:#00ff9c;
 .buy{color:#00ff9c}
 .sell{color:#ff4d4d}
 
-/* ALERT PANEL */
+/* ALERTS */
 
 .right{
 position:fixed;
@@ -120,10 +130,11 @@ overflow:auto;
 }
 
 .alert{
-background:#1c1c1c;
+background:#1e1e1e;
 padding:8px;
 margin-bottom:8px;
 border-radius:3px;
+font-size:13px;
 }
 
 /* CHART */
@@ -161,30 +172,35 @@ height:420px;
 
 </div>
 
-<!-- MAIN CONTENT -->
+<!-- MAIN -->
 
 <div class="main">
+
+<div class="topbar">
+
+<h2>JetTrend AI Terminal</h2>
+
+<div id="ticker" class="ticker"></div>
+
+</div>
+
+<!-- METRICS -->
 
 <div class="metrics">
 
 <div class="metric">
-<h4>Market Sentiment</h4>
-<span id="sentiment">Bullish</span>
+Market Sentiment<br>
+<span id="sentiment">Neutral</span>
 </div>
 
 <div class="metric">
-<h4>Signal Strength</h4>
-<span id="strength">0.71</span>
+AI Signal Strength<br>
+<span id="strength">0.00</span>
 </div>
 
 <div class="metric">
-<h4>Market Volume</h4>
-<span id="volume">$132B</span>
-</div>
-
-<div class="metric">
-<h4>Momentum Ratio</h4>
-<span id="ratio">0.64</span>
+Momentum Ratio<br>
+<span id="ratio">0.00</span>
 </div>
 
 </div>
@@ -192,15 +208,13 @@ height:420px;
 <table>
 
 <thead>
-
 <tr>
 <th>Time</th>
 <th>Symbol</th>
 <th>Price</th>
-<th>Signal</th>
-<th>Momentum</th>
+<th>AI Signal</th>
+<th>Flow</th>
 </tr>
-
 </thead>
 
 <tbody id="scanner"></tbody>
@@ -213,6 +227,8 @@ height:420px;
 
 <script>
 
+/* ONLY 5 SCANNER STOCKS */
+
 const stocks=[
 "AAPL",
 "NVDA",
@@ -221,7 +237,10 @@ const stocks=[
 "META"
 ]
 
-let last={}
+let history={}
+let lastPrice={}
+
+/* GET PRICE */
 
 async function getPrice(symbol){
 
@@ -235,27 +254,40 @@ return parseFloat(data.price)
 
 }
 
-function addAlert(text){
+/* EMA CALC */
 
-let div=document.createElement("div")
-div.className="alert"
-div.innerText=text
+function ema(values,period){
 
-document.getElementById("alerts").prepend(div)
+let k=2/(period+1)
+let ema=values[0]
+
+for(let i=1;i<values.length;i++){
+
+ema=values[i]*k+ema*(1-k)
 
 }
 
-function signal(price,lastPrice){
+return ema
 
-if(!lastPrice) return "NEUTRAL"
+}
 
-if(price>lastPrice) return "BUY"
+/* AI SIGNAL */
 
-if(price<lastPrice) return "SELL"
+function aiSignal(prices){
+
+if(prices.length<21) return "NEUTRAL"
+
+let ema9=ema(prices.slice(-9),9)
+let ema21=ema(prices.slice(-21),21)
+
+if(ema9>ema21) return "BUY"
+if(ema9<ema21) return "SELL"
 
 return "NEUTRAL"
 
 }
+
+/* CHART */
 
 function loadChart(symbol){
 
@@ -272,15 +304,62 @@ height:420
 
 }
 
+/* ALERT */
+
+function addAlert(text){
+
+let div=document.createElement("div")
+div.className="alert"
+div.innerText=text
+
+document.getElementById("alerts").prepend(div)
+
+}
+
+/* TICKER */
+
+function buildTicker(data){
+
+let ticker=document.getElementById("ticker")
+ticker.innerHTML=""
+
+for(let s of ["SPY","QQQ","DIA"]){
+
+let d=document.createElement("div")
+d.innerText=s+" "+(data[s]??"-")
+ticker.appendChild(d)
+
+}
+
+}
+
+/* BUILD SCANNER */
+
 async function build(){
 
 let table=document.getElementById("scanner")
-
 table.innerHTML=""
+
+let prices={}
+let buys=0
+let sells=0
 
 for(let s of stocks){
 
 let price=await getPrice(s)
+
+prices[s]=price
+
+if(!history[s]) history[s]=[]
+
+history[s].push(price)
+
+if(history[s].length>50) history[s].shift()
+
+let signal=aiSignal(history[s])
+
+if(signal==="BUY") buys++
+if(signal==="SELL") sells++
 
 let tr=document.createElement("tr")
 
@@ -296,42 +375,55 @@ let p=document.createElement("td")
 p.innerText=price.toFixed(2)
 
 let sig=document.createElement("td")
+sig.innerText=signal
 
-let sgn=signal(price,last[s])
+if(signal==="BUY") sig.className="buy"
+if(signal==="SELL") sig.className="sell"
 
-sig.innerText=sgn
+/* FLOW STYLE COLUMN */
 
-if(sgn==="BUY") sig.className="buy"
-if(sgn==="SELL") sig.className="sell"
+let flow=document.createElement("td")
 
-let mom=document.createElement("td")
+let flows=["Sweep","Block","Split"]
 
-let momentum=(Math.random()*100).toFixed(0)+"%"
-
-mom.innerText=momentum
+flow.innerText=flows[Math.floor(Math.random()*3)]
 
 tr.appendChild(time)
 tr.appendChild(sym)
 tr.appendChild(p)
 tr.appendChild(sig)
-tr.appendChild(mom)
+tr.appendChild(flow)
 
 table.appendChild(tr)
 
-if(last[s] && price!==last[s]){
+if(lastPrice[s] && price!==lastPrice[s]){
 
 addAlert(s+" moved to "+price.toFixed(2))
 
 }
 
-last[s]=price
+lastPrice[s]=price
 
 }
 
+/* MARKET SENTIMENT */
+
+let sentiment="Neutral"
+
+if(buys>sells) sentiment="Bullish"
+if(sells>buys) sentiment="Bearish"
+
+document.getElementById("sentiment").innerText=sentiment
+document.getElementById("strength").innerText=(buys/(buys+sells+1)).toFixed(2)
+document.getElementById("ratio").innerText=(buys-sells)
+
+buildTicker(prices)
+
 }
+
+/* RUN */
 
 build()
-
 setInterval(build,20000)
 
 loadChart("AAPL")
@@ -339,6 +431,4 @@ loadChart("AAPL")
 </script>
 
 </body>
-
 </html>
-```
