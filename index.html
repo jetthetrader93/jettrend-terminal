@@ -4,6 +4,7 @@
 <head>
 
 <title>JetTrend AI Terminal</title>
+
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
@@ -151,29 +152,11 @@ overflow:auto;
 margin-bottom:25px;
 }
 
-/* ALERT */
-
 .alert{
 background:#1a1a1a;
 padding:8px;
 margin-bottom:8px;
 border-radius:4px;
-}
-
-/* NEWS */
-
-.news{
-background:#111;
-padding:10px;
-border-radius:6px;
-margin-top:10px;
-}
-
-.news a{
-color:#00ff9c;
-display:block;
-margin-bottom:4px;
-text-decoration:none;
 }
 
 /* SEARCH */
@@ -196,6 +179,20 @@ padding:6px;
 color:white;
 }
 
+.news{
+background:#111;
+padding:10px;
+border-radius:6px;
+margin-top:10px;
+}
+
+.news a{
+color:#00ff9c;
+display:block;
+margin-bottom:4px;
+text-decoration:none;
+}
+
 #chart{
 margin-top:20px;
 height:500px;
@@ -210,12 +207,10 @@ height:500px;
 <div class="container">
 
 <div class="sidebar">
-
 <div onclick="showPanel('scanner')">📊</div>
 <div onclick="showPanel('search')">🔍</div>
 <div onclick="showPanel('flow')">⚡</div>
 <div onclick="showPanel('settings')">⚙️</div>
-
 </div>
 
 <div class="topbar">
@@ -225,8 +220,6 @@ JetTrend AI Terminal
 <div class="ticker" id="ticker"></div>
 
 <div class="main">
-
-<!-- METERS -->
 
 <div class="meters">
 
@@ -261,7 +254,6 @@ JetTrend AI Terminal
 <div id="scannerPanel">
 
 <table>
-
 <thead>
 <tr>
 <th>Time</th>
@@ -273,9 +265,7 @@ JetTrend AI Terminal
 <th>Flow</th>
 </tr>
 </thead>
-
 <tbody id="scanner"></tbody>
-
 </table>
 
 <div class="news" id="news"></div>
@@ -289,10 +279,8 @@ JetTrend AI Terminal
 <div id="searchPanel" style="display:none">
 
 <div class="searchBox">
-
 <input id="searchTicker" placeholder="Enter ticker">
 <button onclick="searchTicker()">Search</button>
-
 </div>
 
 <div id="searchResult"></div>
@@ -341,8 +329,6 @@ JetTrend AI Terminal
 
 </div>
 
-<!-- RIGHT SIDE -->
-
 <div class="right">
 
 <div class="panel">
@@ -374,15 +360,12 @@ symbols.forEach(s=>history[s]=[])
 
 /* NAVIGATION */
 
-function showPanel(p){
+function showPanel(panel){
 
 ["scannerPanel","searchPanel","flowPanel","settingsPanel"]
 .forEach(id=>document.getElementById(id).style.display="none")
 
-if(p==="scanner")document.getElementById("scannerPanel").style.display="block"
-if(p==="search")document.getElementById("searchPanel").style.display="block"
-if(p==="flow")document.getElementById("flowPanel").style.display="block"
-if(p==="settings")document.getElementById("settingsPanel").style.display="block"
+document.getElementById(panel+"Panel").style.display="block"
 
 }
 
@@ -409,12 +392,13 @@ return null
 
 /* EMA */
 
-function ema(d,p){
+function ema(data,p){
 
 let k=2/(p+1)
-let e=d[0]
+let e=data[0]
 
-for(let i=1;i<d.length;i++)e=d[i]*k+e*(1-k)
+for(let i=1;i<data.length;i++)
+e=data[i]*k+e*(1-k)
 
 return e
 
@@ -457,97 +441,23 @@ height:500
 
 }
 
-/* ALERT */
-
-function alertMsg(t){
-
-let div=document.createElement("div")
-div.className="alert"
-div.innerText=t
-
-document.getElementById("alerts").prepend(div)
-
-}
-
-/* SEARCH */
-
-async function searchTicker(){
-
-let s=document.getElementById("searchTicker").value.toUpperCase()
-
-let p=await getPrice(s)
-
-if(!p)return
-
-if(!history[s])history[s]=[]
-
-history[s].push(p)
-
-let [signal,prob]=aiPrediction(history[s])
-
-document.getElementById("searchResult").innerHTML=
-
-`<b>${s}</b><br>Price ${p.toFixed(2)}<br>Signal ${signal}<br>Probability ${prob}
-<br><button onclick="saveQuickTicker('${s}')">Save</button>`
-
-loadChart(s)
-
-}
-
-/* QUICK ACCESS */
-
-let quickTickers=["SPY","QQQ","AAPL","NVDA"]
-
-function saveQuickTicker(t){
-
-let saved=JSON.parse(localStorage.getItem("jettrend_quick"))||[]
-
-if(!saved.includes(t)){
-saved.push(t)
-localStorage.setItem("jettrend_quick",JSON.stringify(saved))
-}
-
-loadQuick()
-
-}
-
-function loadQuick(){
-
-let saved=JSON.parse(localStorage.getItem("jettrend_quick"))||quickTickers
-
-let q=document.getElementById("quickList")
-
-q.innerHTML=""
-
-saved.forEach(t=>{
-
-let b=document.createElement("button")
-b.innerText=t
-b.onclick=()=>searchTicker(t)
-
-q.appendChild(b)
-
-})
-
-}
-
-/* SCANNER */
+/* FAST SCANNER */
 
 async function buildScanner(){
 
-let table=document.getElementById("scanner")
-table.innerHTML=""
+let prices=await Promise.all(symbols.map(s=>getPrice(s)))
 
+let rows=""
 let buy=0
 let sell=0
 
-for(let s of symbols){
+symbols.forEach((s,i)=>{
 
-let p=await getPrice(s)
+let p=prices[i]
 
 if(p)history[s].push(p)
 
-if(history[s].length<25)continue
+if(history[s].length<25)return
 
 let [signal,prob]=aiPrediction(history[s])
 
@@ -558,24 +468,24 @@ ema(history[s].slice(-9),9)-ema(history[s].slice(-21),21)
 if(signal.includes("BUY"))buy++
 if(signal.includes("SELL"))sell++
 
-let flow=["Sweep","Block","Split","Momentum"]
-flow=flow[Math.floor(Math.random()*flow.length)]
+let flows=["Sweep","Block","Split","Momentum"]
 
-let tr=document.createElement("tr")
+let flow=flows[Math.floor(Math.random()*flows.length)]
 
-tr.innerHTML=
-
-`<td>${new Date().toLocaleTimeString()}</td>
+rows+=`
+<tr>
+<td>${new Date().toLocaleTimeString()}</td>
 <td class="symbol" onclick="loadChart('${s}')">${s}</td>
 <td>${p?p.toFixed(2):"-"}</td>
 <td class="${signal.includes('BUY')?'buy':'sell'}">${signal}</td>
 <td class="prob">${prob}</td>
 <td>${trend}</td>
-<td class="flow">${flow}</td>`
+<td class="flow">${flow}</td>
+</tr>`
 
-table.appendChild(tr)
+})
 
-}
+document.getElementById("scanner").innerHTML=rows
 
 updateMeters(buy,sell)
 
@@ -586,7 +496,6 @@ updateMeters(buy,sell)
 function updateMeters(buys,sells){
 
 let total=buys+sells||1
-
 let sentiment=Math.round((buys/total)*100)
 
 document.getElementById("sentimentGauge")
@@ -624,20 +533,19 @@ n.appendChild(a)
 
 async function ticker(){
 
-let t=document.getElementById("ticker")
-t.innerHTML=""
+let prices=await Promise.all(symbols.map(s=>getPrice(s)))
 
-for(let s of symbols){
+let html=""
 
-let p=await getPrice(s)
+symbols.forEach((s,i)=>{
 
-if(!p)continue
+let p=prices[i]
 
-let span=document.createElement("span")
-span.innerText=`${s} ${p.toFixed(2)}`
-t.appendChild(span)
+if(p)html+=`<span>${s} ${p.toFixed(2)}</span>`
 
-}
+})
+
+document.getElementById("ticker").innerHTML=html
 
 }
 
@@ -646,42 +554,40 @@ t.appendChild(span)
 function flow(){
 
 let table=document.getElementById("flowTable")
-table.innerHTML=""
+
+let rows=""
 
 let types=["Sweep","Block","Split"]
 
 for(let i=0;i<6;i++){
 
 let s=symbols[Math.floor(Math.random()*symbols.length)]
-
 let size=Math.floor(Math.random()*50000)
 
-let premium="$"+size*2
-
-table.innerHTML+=
-
-`<tr>
+rows+=`
+<tr>
 <td>${new Date().toLocaleTimeString()}</td>
 <td>${s}</td>
 <td>${types[Math.floor(Math.random()*types.length)]}</td>
 <td>${size}</td>
-<td>${premium}</td>
+<td>$${size*2}</td>
 </tr>`
 
 }
+
+table.innerHTML=rows
 
 }
 
 /* INIT */
 
 news()
-loadQuick()
 ticker()
 buildScanner()
 flow()
 
-setInterval(buildScanner,20000)
-setInterval(ticker,10000)
+setInterval(buildScanner,5000)
+setInterval(ticker,5000)
 setInterval(flow,15000)
 
 </script>
