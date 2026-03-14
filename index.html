@@ -4,7 +4,7 @@
 
 <head>
 
-<title>JetTrend Market Terminal</title>
+<title>JetTrend Market Dashboard</title>
 
 <script src="https://s3.tradingview.com/tv.js"></script>
 
@@ -17,22 +17,13 @@ background:#0b0b0b;
 color:white;
 }
 
-/* TOP BAR */
-
 .topbar{
 background:#111;
 padding:10px 20px;
+border-bottom:1px solid #333;
 display:flex;
 justify-content:space-between;
-border-bottom:1px solid #333;
 }
-
-.index{
-margin-right:25px;
-font-weight:bold;
-}
-
-/* GRID LAYOUT */
 
 .layout{
 display:grid;
@@ -42,25 +33,11 @@ gap:10px;
 padding:10px;
 }
 
-/* HEATMAP */
-
-.heatmap{
-display:grid;
-grid-template-columns:repeat(6,1fr);
-gap:5px;
-}
-
-.heat{
-padding:20px;
-text-align:center;
+.panel{
+background:#141414;
+padding:12px;
 border-radius:4px;
-font-weight:bold;
 }
-
-.green{background:#0b6b3a;}
-.red{background:#7a0000;}
-
-/* TABLE */
 
 table{
 width:100%;
@@ -80,8 +57,8 @@ border-bottom:1px solid #222;
 }
 
 .symbol{
-cursor:pointer;
 font-weight:bold;
+cursor:pointer;
 }
 
 .symbol:hover{
@@ -91,12 +68,9 @@ color:#00ff9c;
 .buy{color:#00ff9c;}
 .sell{color:#ff4d4d;}
 
-/* RIGHT PANEL */
-
-.panel{
-background:#141414;
-padding:10px;
-border-radius:4px;
+#chart{
+height:450px;
+margin-top:10px;
 }
 
 .alert{
@@ -106,12 +80,21 @@ margin-bottom:8px;
 border-radius:4px;
 }
 
-/* CHART */
-
-#chart{
-height:450px;
-margin-top:10px;
+.heatmap{
+display:grid;
+grid-template-columns:repeat(5,1fr);
+gap:5px;
 }
+
+.heat{
+padding:20px;
+text-align:center;
+border-radius:4px;
+font-weight:bold;
+}
+
+.green{background:#006b3f;}
+.red{background:#7a0000;}
 
 </style>
 
@@ -122,9 +105,7 @@ margin-top:10px;
 <div class="topbar">
 
 <div>
-<span class="index">SPY</span>
-<span class="index">QQQ</span>
-<span class="index">DIA</span>
+SPY | QQQ | DIA
 </div>
 
 <div>
@@ -135,8 +116,6 @@ JetTrend Market Dashboard
 
 <div class="layout">
 
-<!-- HEATMAP -->
-
 <div class="panel">
 
 <h3>Market Heatmap</h3>
@@ -145,8 +124,6 @@ JetTrend Market Dashboard
 
 </div>
 
-<!-- ALERTS -->
-
 <div class="panel">
 
 <h3>Alerts</h3>
@@ -154,8 +131,6 @@ JetTrend Market Dashboard
 <div id="alerts"></div>
 
 </div>
-
-<!-- SCREENER -->
 
 <div class="panel">
 
