@@ -50,6 +50,11 @@ border-bottom:1px solid #333;
 font-weight:bold;
 }
 
+#marketStatus{
+margin-left:20px;
+color:#00ff9c;
+}
+
 .main{
 padding:15px;
 overflow:auto;
@@ -120,6 +125,7 @@ height:520px;
 
 <div class="topbar">
 JetTrend Market Terminal
+<span id="marketStatus">Loading...</span>
 </div>
 
 <div class="main">
@@ -163,6 +169,18 @@ const symbols=[
 "AAPL","NVDA","TSLA","AMD","META","MSFT","SPY","QQQ"
 ]
 
+async function getMarketStatus(){
+
+const url=`https://api.allorigins.win/raw?url=https://finnhub.io/api/v1/stock/market-status?exchange=US&token=${API}`
+
+const res=await fetch(url)
+const data=await res.json()
+
+document.getElementById("marketStatus").innerText=
+data.isOpen ? "Market Open" : "Market Closed"
+
+}
+
 async function getQuote(symbol){
 
 const url=`https://api.allorigins.win/raw?url=https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API}`
@@ -200,6 +218,7 @@ if(sig==="BUY") return "green"
 if(sig==="SELL") return "red"
 
 return ""
+
 }
 
 function addAlert(text){
@@ -276,6 +295,7 @@ addAlert(s+" momentum BUY")
 
 }
 
+getMarketStatus()
 buildScanner()
 
 setInterval(buildScanner,30000)
