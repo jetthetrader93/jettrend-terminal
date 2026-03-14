@@ -137,14 +137,22 @@ position:fixed;
 top:20px;
 right:20px;
 width:260px;
+z-index:999;
 }
 
 .alert{
-background:#111;
+background:#121212;
 border-left:4px solid #00ff9c;
 padding:10px;
 margin-bottom:10px;
 border-radius:4px;
+animation:fade 6s forwards;
+}
+
+@keyframes fade{
+0%{opacity:1}
+80%{opacity:1}
+100%{opacity:0}
 }
 
 /* News */
@@ -164,6 +172,11 @@ object-fit:cover;
 
 .newsText{
 padding:10px;
+}
+
+.pl{
+font-size:12px;
+color:#ccc;
 }
 
 </style>
@@ -214,6 +227,7 @@ AI Strength
 <th>Price</th>
 <th>Signal</th>
 <th>Breakout%</th>
+<th>P/L</th>
 </tr>
 </thead>
 
@@ -222,9 +236,6 @@ AI Strength
 </table>
 
 <div id="chart"></div>
-
-<h3>AI Opportunity Radar</h3>
-<div id="aiRadar"></div>
 
 <h3>Historical Alerts</h3>
 <div id="alertHistory"></div>
@@ -242,27 +253,34 @@ AI Strength
 
 <script>
 
-/* SYMBOL LIST */
+/* SETTINGS */
+
+const API="54a78d716fd742ee8eaf5eb3aa2b2b58"
 
 const symbols=["AAPL","NVDA","TSLA","AMD","META","MSFT","SPY"]
 
 let history={}
+let entryPrices={}
 let alertHistory=[]
+let lastSignals={}
 
 symbols.forEach(s=>{
 history[s]=Array(150).fill(100+Math.random()*10)
 })
 
-/* PRICE API */
+/* PRICE */
 
 async function getPrice(symbol){
 
 try{
 
-let r=await fetch(`https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=demo`)
-let d=await r.json()
+const r = await fetch(
+`https://api.twelvedata.com/price?symbol=${symbol}&apikey=${API}`
+)
 
-return Number(d[0].price)
+const d = await r.json()
+
+return Number(d.price)
 
 }catch{
 
@@ -301,16 +319,35 @@ return "NEUTRAL"
 
 }
 
-/* ALERT */
+/* PROFIT LOSS */
 
-function triggerAlert(text){
+function calculatePL(entry,current){
+
+if(!entry) return "-"
+
+let diff=current-entry
+let pct=(diff/entry)*100
+
+return `${diff.toFixed(2)} (${pct.toFixed(1)}%)`
+
+}
+
+/* ALERT SYSTEM */
+
+function triggerAlert(symbol,signal){
+
+if(lastSignals[symbol]===signal) return
+
+lastSignals[symbol]=signal
 
 const div=document.createElement("div")
 
 div.className="alert"
-div.innerText=text
+div.innerText=`${symbol} ${signal} signal`
 
 document.getElementById("alerts").prepend(div)
+
+alertHistory.push(`${new Date().toLocaleTimeString()} ${symbol} ${signal}`)
 
 }
 
@@ -321,7 +358,6 @@ async function buildScanner(){
 let prices=await Promise.all(symbols.map(getPrice))
 
 let rows=""
-let radar=""
 let buys=0
 
 symbols.forEach((s,i)=>{
@@ -331,16 +367,18 @@ let p=prices[i]
 if(p) history[s].push(p)
 
 let signal=signalEngine(history[s])
+
+if(signal==="BUY" && !entryPrices[s])
+entryPrices[s]=p
+
+let pl=calculatePL(entryPrices[s],p)
+
+if(signal==="BUY") buys++
+
+if(signal!=="NEUTRAL")
+triggerAlert(s,signal)
+
 let breakout=Math.floor(Math.random()*100)
-
-if(signal==="BUY"){
-buys++
-triggerAlert(`${s} BUY signal`)
-alertHistory.push(`${new Date().toLocaleTimeString()} ${s} BUY`)
-}
-
-if(breakout>85)
-radar+=`${s} breakout probability ${breakout}%<br>`
 
 rows+=`
 <tr>
@@ -348,13 +386,13 @@ rows+=`
 <td>${p?p.toFixed(2):"-"}</td>
 <td class="${signal==="BUY"?"buy":"sell"}">${signal}</td>
 <td>${breakout}%</td>
+<td class="pl">${pl}</td>
 </tr>
 `
 
 })
 
 document.getElementById("scanner").innerHTML=rows
-document.getElementById("aiRadar").innerHTML=radar
 
 document.getElementById("strength").innerText=
 Math.round((buys/symbols.length)*100)
@@ -404,12 +442,15 @@ async function loadNews(symbol){
 
 try{
 
-let r=await fetch(`https://financialmodelingprep.com/api/v3/stock_news?tickers=${symbol}&limit=5&apikey=demo`)
-let news=await r.json()
+const r=await fetch(
+`https://finnhub.io/api/v1/company-news?symbol=${symbol}&from=2024-01-01&to=2026-01-01&token=c3qcq1hr01qgdhqbtk80`
+)
+
+const news=await r.json()
 
 let html=""
 
-news.forEach(n=>{
+news.slice(0,5).forEach(n=>{
 
 html+=`
 <div class="newsCard">
@@ -418,9 +459,9 @@ html+=`
 
 <div class="newsText">
 
-<b>${n.title}</b>
+<b>${n.headline}</b>
 
-<p>${n.text.slice(0,100)}...</p>
+<p>${n.summary.slice(0,100)}...</p>
 
 <a href="${n.url}" target="_blank">Read</a>
 
