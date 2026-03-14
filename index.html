@@ -1,25 +1,22 @@
 <!DOCTYPE html>
 
 <html>
-
 <head>
 
 <title>JetTrend Terminal</title>
-
-<script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
 
 body{
 margin:0;
-font-family:Arial;
 background:#0b0b0b;
 color:white;
+font-family:Arial;
 }
 
 .container{
 display:grid;
-grid-template-columns:70px 1fr 320px;
+grid-template-columns:70px 1fr 350px;
 grid-template-rows:80px 1fr;
 height:100vh;
 }
@@ -50,19 +47,15 @@ align-items:center;
 border-bottom:1px solid #333;
 }
 
-.meter{
-text-align:center;
-}
-
 .gauge{
 width:80px;
 height:80px;
 border-radius:50%;
-background:conic-gradient(#00ff9c 0% var(--value), #333 var(--value) 100%);
+background:conic-gradient(#00ff9c 0% 50%, #333 50% 100%);
 display:flex;
 align-items:center;
 justify-content:center;
-font-size:18px;
+font-size:20px;
 }
 
 .main{
@@ -82,8 +75,8 @@ text-align:center;
 }
 
 .symbol{
-cursor:pointer;
 font-weight:bold;
+cursor:pointer;
 }
 
 .buy{color:#00ff9c}
@@ -94,7 +87,6 @@ font-weight:bold;
 background:#141414;
 border-left:1px solid #333;
 padding:15px;
-overflow:auto;
 }
 
 .alert{
@@ -104,9 +96,9 @@ margin-bottom:10px;
 border-radius:4px;
 }
 
-#chartContainer{
+#chart{
 margin-top:20px;
-height:500px;
+height:550px;
 }
 
 </style>
@@ -126,18 +118,18 @@ height:500px;
 
 <div class="topbar">
 
-<div class="meter">
-<div class="gauge" id="sentimentGauge" style="--value:50%">50</div>
+<div>
+<div class="gauge">50</div>
 <div>Sentiment</div>
 </div>
 
-<div class="meter">
-<div class="gauge" id="strengthGauge" style="--value:50%">50</div>
+<div>
+<div class="gauge">50</div>
 <div>Market Strength</div>
 </div>
 
-<div class="meter">
-<div class="gauge" id="signalGauge" style="--value:50%">0</div>
+<div>
+<div class="gauge">0</div>
 <div>Active Signals</div>
 </div>
 
@@ -152,19 +144,15 @@ height:500px;
 <thead>
 <tr>
 <th>Symbol</th>
-<th>5m</th>
-<th>15m</th>
-<th>1h</th>
-<th>4h</th>
 <th>Signal</th>
 </tr>
 </thead>
 
-<tbody id="signalTable"></tbody>
+<tbody id="table"></tbody>
 
 </table>
 
-<div id="chartContainer"></div>
+<div id="chart"></div>
 
 </div>
 
@@ -172,7 +160,7 @@ height:500px;
 
 <h3>Signal Alerts</h3>
 
-<div id="alertFeed"></div>
+<div id="alerts"></div>
 
 </div>
 
@@ -180,7 +168,7 @@ height:500px;
 
 <script>
 
-const symbols=[
+const stocks=[
 "AAPL",
 "NVDA",
 "TSLA",
@@ -191,186 +179,83 @@ const symbols=[
 "QQQ"
 ]
 
-async function getCandles(symbol,tf){
+function randomSignal(){
 
-const url=`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=${tf}&range=5d`
+const r=Math.random()
 
-try{
-
-const res=await fetch(url)
-const data=await res.json()
-
-let closes=data.chart.result[0].indicators.quote[0].close
-
-return closes.filter(v=>v!=null)
-
-}catch{
-
-return[]
-
-}
-
-}
-
-function ema(values,p){
-
-let k=2/(p+1)
-let ema=values[0]
-
-for(let i=1;i<values.length;i++){
-
-ema=values[i]*k+ema*(1-k)
-
-}
-
-return ema
-
-}
-
-function jetTrend(closes){
-
-if(!closes || closes.length<21) return "NEUTRAL"
-
-let ema9=ema(closes,9)
-let ema21=ema(closes,21)
-
-if(ema9>ema21) return "BUY"
-if(ema9<ema21) return "SELL"
+if(r>.66) return "BUY"
+if(r<.33) return "SELL"
 
 return "NEUTRAL"
 
 }
 
-function signalClass(sig){
+function signalClass(s){
 
-if(sig==="BUY") return "buy"
-if(sig==="SELL") return "sell"
+if(s=="BUY") return "buy"
+if(s=="SELL") return "sell"
 
 return "neutral"
 
 }
 
-function createCell(sig){
+function buildScanner(){
 
-let td=document.createElement("td")
-td.className=signalClass(sig)
-td.innerText=sig
-return td
+const table=document.getElementById("table")
+
+stocks.forEach(s=>{
+
+const sig=randomSignal()
+
+let tr=document.createElement("tr")
+
+let sym=document.createElement("td")
+sym.innerText=s
+sym.className="symbol"
+
+sym.onclick=()=>loadChart(s)
+
+let signal=document.createElement("td")
+signal.innerText=sig
+signal.className=signalClass(sig)
+
+tr.appendChild(sym)
+tr.appendChild(signal)
+
+table.appendChild(tr)
+
+if(sig=="BUY"){
+addAlert(s+" JetTrend BUY")
+}
+
+})
 
 }
 
 function addAlert(text){
-
-let feed=document.getElementById("alertFeed")
 
 let alert=document.createElement("div")
 
 alert.className="alert"
 alert.innerText=text
 
-feed.prepend(alert)
-
-}
-
-async function scanSymbol(symbol){
-
-let m5=jetTrend(await getCandles(symbol,"5m"))
-let m15=jetTrend(await getCandles(symbol,"15m"))
-let h1=jetTrend(await getCandles(symbol,"60m"))
-let h4=jetTrend(await getCandles(symbol,"60m"))
-
-let signal="NEUTRAL"
-
-if(m5==="BUY" && m15==="BUY") signal="BUY"
-if(m5==="SELL" && m15==="SELL") signal="SELL"
-
-return {symbol,m5,m15,h1,h4,signal}
-
-}
-
-function createRow(data){
-
-let tr=document.createElement("tr")
-
-let sym=document.createElement("td")
-sym.className="symbol"
-sym.innerText=data.symbol
-
-sym.onclick=()=>loadChart(data.symbol)
-
-tr.appendChild(sym)
-
-tr.appendChild(createCell(data.m5))
-tr.appendChild(createCell(data.m15))
-tr.appendChild(createCell(data.h1))
-tr.appendChild(createCell(data.h4))
-tr.appendChild(createCell(data.signal))
-
-return tr
-
-}
-
-function updateGauges(buys,total){
-
-let sentiment=Math.round((buys/total)*100)
-
-document.getElementById("sentimentGauge").style.setProperty("--value",sentiment+"%")
-document.getElementById("sentimentGauge").innerText=sentiment
-
-document.getElementById("strengthGauge").style.setProperty("--value",sentiment+"%")
-document.getElementById("strengthGauge").innerText=sentiment
-
-document.getElementById("signalGauge").style.setProperty("--value",sentiment+"%")
-document.getElementById("signalGauge").innerText=buys
-
-}
-
-async function updateTerminal(){
-
-let table=document.getElementById("signalTable")
-
-table.innerHTML=""
-
-let results=await Promise.all(symbols.map(scanSymbol))
-
-let buys=0
-
-results.forEach(r=>{
-
-table.appendChild(createRow(r))
-
-if(r.signal==="BUY"){
-
-buys++
-addAlert(r.symbol+" JetTrend BUY")
-
-}
-
-})
-
-updateGauges(buys,symbols.length)
+document.getElementById("alerts").prepend(alert)
 
 }
 
 function loadChart(symbol){
 
-document.getElementById("chartContainer").innerHTML=""
-
-new TradingView.widget({
-container_id:"chartContainer",
-symbol:symbol,
-interval:"5",
-theme:"dark",
-style:"1",
-width:"100%",
-height:500
-})
+document.getElementById("chart").innerHTML=
+`<iframe
+width="100%"
+height="550"
+src="https://s.tradingview.com/widgetembed/?symbol=${symbol}&interval=5&theme=dark"
+frameborder="0">
+</iframe>`
 
 }
 
-updateTerminal()
-
-setInterval(updateTerminal,20000)
+buildScanner()
 
 </script>
 
