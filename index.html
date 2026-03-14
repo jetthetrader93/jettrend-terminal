@@ -80,9 +80,6 @@ cursor:pointer;
 color:#00ff9c;
 }
 
-.green{color:#00ff9c}
-.red{color:#ff4d4d}
-
 .right{
 background:#141414;
 border-left:1px solid #333;
@@ -155,15 +152,22 @@ JetTrend Market Terminal
 
 <script>
 
-const API="YOUR_TWELVEDATA_KEY"
+const API="54a78d716fd742ee8eaf5eb3aa2b2b58"
 
 const symbols=[
-"AAPL","NVDA","TSLA","AMD","META","MSFT","SPY","QQQ"
+"AAPL:NASDAQ",
+"NVDA:NASDAQ",
+"TSLA:NASDAQ",
+"AMD:NASDAQ",
+"META:NASDAQ",
+"MSFT:NASDAQ",
+"SPY:NYSE",
+"QQQ:NASDAQ"
 ]
 
 async function getPrice(symbol){
 
-const url=`https://api.twelvedata.com/price?symbol=${symbol}&apikey=${54a78d716fd742ee8eaf5eb3aa2b2b58}`
+const url=`https://api.twelvedata.com/price?symbol=${symbol}&apikey=${API}`
 
 try{
 
@@ -180,10 +184,13 @@ return null
 
 }
 
-function signal(price){
+function addAlert(text){
 
-if(price>0) return "ACTIVE"
-return "NEUTRAL"
+let div=document.createElement("div")
+div.className="alert"
+div.innerText=text
+
+document.getElementById("alerts").prepend(div)
 
 }
 
@@ -213,12 +220,10 @@ for(let s of symbols){
 
 let price=await getPrice(s)
 
-let sig=signal(price)
-
 let tr=document.createElement("tr")
 
 let sym=document.createElement("td")
-sym.innerText=s
+sym.innerText=s.split(":")[0]
 sym.className="symbol"
 sym.onclick=()=>loadChart(s)
 
@@ -226,13 +231,17 @@ let priceCell=document.createElement("td")
 priceCell.innerText=price ?? "-"
 
 let sigCell=document.createElement("td")
-sigCell.innerText=sig
+sigCell.innerText=price ? "ACTIVE" : "NEUTRAL"
 
 tr.appendChild(sym)
 tr.appendChild(priceCell)
 tr.appendChild(sigCell)
 
 table.appendChild(tr)
+
+if(price){
+addAlert(s.split(":")[0]+" price updated")
+}
 
 }
 
