@@ -4,7 +4,6 @@
 <head>
 
 <title>JetTrend Market Terminal</title>
-
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
@@ -132,7 +131,6 @@ JetTrend Market Terminal
 <tr>
 <th>Symbol</th>
 <th>Price</th>
-<th>Change</th>
 <th>Signal</th>
 </tr>
 </thead>
@@ -157,57 +155,35 @@ JetTrend Market Terminal
 
 <script>
 
-const API="d6qpsl9r01qgdhqbtjngd6qpsl9r01qgdhqbtjo0"
+const API="YOUR_TWELVEDATA_KEY"
 
-const symbols=["AAPL","NVDA","TSLA","AMD","META","MSFT","SPY","QQQ"]
+const symbols=[
+"AAPL","NVDA","TSLA","AMD","META","MSFT","SPY","QQQ"
+]
 
-async function getQuote(symbol){
+async function getPrice(symbol){
 
-const url=`https://api.allorigins.win/raw?url=https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${API}`
+const url=`https://api.twelvedata.com/price?symbol=${symbol}&apikey=${54a78d716fd742ee8eaf5eb3aa2b2b58}`
 
 try{
 
 const res=await fetch(url)
 const data=await res.json()
 
-return{
-price:data.c,
-change:data.dp
-}
+return parseFloat(data.price)
 
 }catch{
 
-return{price:"-",change:0}
+return null
 
 }
 
 }
 
-function signal(change){
+function signal(price){
 
-if(change>1) return "BUY"
-if(change<-1) return "SELL"
-
+if(price>0) return "ACTIVE"
 return "NEUTRAL"
-
-}
-
-function color(sig){
-
-if(sig==="BUY") return "green"
-if(sig==="SELL") return "red"
-
-return ""
-
-}
-
-function addAlert(text){
-
-let div=document.createElement("div")
-div.className="alert"
-div.innerText=text
-
-document.getElementById("alerts").prepend(div)
 
 }
 
@@ -235,9 +211,9 @@ table.innerHTML=""
 
 for(let s of symbols){
 
-let q=await getQuote(s)
+let price=await getPrice(s)
 
-let sig=signal(q.change)
+let sig=signal(price)
 
 let tr=document.createElement("tr")
 
@@ -246,29 +222,17 @@ sym.innerText=s
 sym.className="symbol"
 sym.onclick=()=>loadChart(s)
 
-let price=document.createElement("td")
-price.innerText=q.price
+let priceCell=document.createElement("td")
+priceCell.innerText=price ?? "-"
 
-let change=document.createElement("td")
-change.innerText=q.change+"%"
-
-if(q.change>0) change.className="green"
-if(q.change<0) change.className="red"
-
-let signalCell=document.createElement("td")
-signalCell.innerText=sig
-signalCell.className=color(sig)
+let sigCell=document.createElement("td")
+sigCell.innerText=sig
 
 tr.appendChild(sym)
-tr.appendChild(price)
-tr.appendChild(change)
-tr.appendChild(signalCell)
+tr.appendChild(priceCell)
+tr.appendChild(sigCell)
 
 table.appendChild(tr)
-
-if(sig==="BUY"){
-addAlert(s+" BUY momentum")
-}
 
 }
 
