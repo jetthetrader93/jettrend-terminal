@@ -4,16 +4,15 @@
 <head>
 
 <title>JetTrend AI Terminal</title>
-
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
 
 body{
 margin:0;
-font-family:Arial;
+font-family:Segoe UI;
 background:#0b0b0b;
-color:white;
+color:#eee;
 }
 
 /* GRID */
@@ -30,8 +29,8 @@ height:100vh;
 .sidebar{
 grid-row:1/4;
 background:#111;
-text-align:center;
 padding-top:20px;
+text-align:center;
 }
 
 .sidebar div{
@@ -45,7 +44,7 @@ opacity:1;
 color:#00ff9c;
 }
 
-/* TOPBAR */
+/* HEADER */
 
 .topbar{
 grid-column:2/4;
@@ -53,8 +52,8 @@ background:#141414;
 display:flex;
 align-items:center;
 padding-left:20px;
-font-weight:bold;
-border-bottom:1px solid #333;
+font-weight:600;
+border-bottom:1px solid #222;
 }
 
 /* TICKER */
@@ -62,14 +61,13 @@ border-bottom:1px solid #333;
 .ticker{
 grid-column:2/4;
 background:#0f0f0f;
-white-space:nowrap;
 overflow:hidden;
-border-bottom:1px solid #333;
+border-bottom:1px solid #222;
 }
 
 .ticker span{
-display:inline-block;
 padding:10px 25px;
+display:inline-block;
 color:#00ff9c;
 }
 
@@ -97,9 +95,6 @@ width:90px;
 height:90px;
 border-radius:50%;
 background:conic-gradient(#00ff9c var(--value),#222 var(--value));
-display:flex;
-align-items:center;
-justify-content:center;
 margin:auto;
 }
 
@@ -114,22 +109,23 @@ color:#aaa;
 table{
 width:100%;
 border-collapse:collapse;
+margin-top:10px;
 }
 
 th{
 text-align:left;
 padding:10px;
-border-bottom:1px solid #333;
+border-bottom:1px solid #222;
 color:#aaa;
 }
 
 td{
 padding:10px;
-border-bottom:1px solid #222;
+border-bottom:1px solid #1a1a1a;
 }
 
 .symbol{
-font-weight:bold;
+font-weight:600;
 cursor:pointer;
 }
 
@@ -137,38 +133,31 @@ cursor:pointer;
 color:#00ff9c;
 }
 
-.buy{color:#00ff9c;font-weight:bold;}
-.sell{color:#ff4d4d;font-weight:bold;}
-.flow{color:#f0c330;}
+.buy{color:#00ff9c;}
+.sell{color:#ff4d4d;}
 .prob{color:#7fd3ff;}
+.flow{color:#f0c330;}
 
 /* RIGHT PANEL */
 
 .right{
 background:#141414;
-border-left:1px solid #333;
+border-left:1px solid #222;
 padding:15px;
 overflow:auto;
 }
 
 .panel{
-margin-bottom:20px;
+margin-bottom:25px;
 }
 
 /* ALERT */
 
 .alert{
 background:#1a1a1a;
-padding:10px;
-margin-bottom:10px;
+padding:8px;
+margin-bottom:8px;
 border-radius:4px;
-}
-
-/* CHART */
-
-#chart{
-margin-top:20px;
-height:500px;
 }
 
 /* NEWS */
@@ -183,8 +172,33 @@ margin-top:10px;
 .news a{
 color:#00ff9c;
 display:block;
-margin-bottom:5px;
+margin-bottom:4px;
 text-decoration:none;
+}
+
+/* SEARCH */
+
+.searchBox{
+margin-bottom:10px;
+}
+
+button{
+background:#00ff9c;
+border:none;
+padding:6px 10px;
+cursor:pointer;
+}
+
+input{
+background:#1a1a1a;
+border:none;
+padding:6px;
+color:white;
+}
+
+#chart{
+margin-top:20px;
+height:500px;
 }
 
 </style>
@@ -195,11 +209,10 @@ text-decoration:none;
 
 <div class="container">
 
-<!-- SIDEBAR -->
-
 <div class="sidebar">
 
 <div onclick="showPanel('scanner')">📊</div>
+<div onclick="showPanel('search')">🔍</div>
 <div onclick="showPanel('flow')">⚡</div>
 <div onclick="showPanel('settings')">⚙️</div>
 
@@ -219,7 +232,7 @@ JetTrend AI Terminal
 
 <div class="meter">
 <div class="gauge" id="sentimentGauge" style="--value:50%"></div>
-<div class="meterLabel">Market Sentiment</div>
+<div class="meterLabel">Sentiment</div>
 <div id="sentimentText">Neutral</div>
 </div>
 
@@ -236,14 +249,14 @@ JetTrend AI Terminal
 </div>
 
 <div class="meter">
-<div class="gauge" id="bullBearGauge" style="--value:50%"></div>
+<div class="gauge" id="ratioGauge" style="--value:50%"></div>
 <div class="meterLabel">Bull/Bear</div>
 <div id="ratioText">0</div>
 </div>
 
 </div>
 
-<!-- SCANNER -->
+<!-- SCANNER PANEL -->
 
 <div id="scannerPanel">
 
@@ -254,7 +267,7 @@ JetTrend AI Terminal
 <th>Time</th>
 <th>Symbol</th>
 <th>Price</th>
-<th>AI Signal</th>
+<th>Signal</th>
 <th>Probability</th>
 <th>Trend</th>
 <th>Flow</th>
@@ -265,11 +278,27 @@ JetTrend AI Terminal
 
 </table>
 
-<div class="news" id="news">
-<b>Market News</b>
-</div>
+<div class="news" id="news"></div>
 
 <div id="chart"></div>
+
+</div>
+
+<!-- SEARCH PANEL -->
+
+<div id="searchPanel" style="display:none">
+
+<div class="searchBox">
+
+<input id="searchTicker" placeholder="Enter ticker">
+<button onclick="searchTicker()">Search</button>
+
+</div>
+
+<div id="searchResult"></div>
+
+<h3>Quick Access</h3>
+<div id="quickList"></div>
 
 </div>
 
@@ -301,7 +330,7 @@ JetTrend AI Terminal
 
 <div id="settingsPanel" style="display:none">
 
-<h3>Watchlist</h3>
+<h3>Add Watchlist</h3>
 
 <input id="watchInput" placeholder="Ticker">
 <button onclick="addWatch()">Add</button>
@@ -312,7 +341,7 @@ JetTrend AI Terminal
 
 </div>
 
-<!-- RIGHT PANEL -->
+<!-- RIGHT SIDE -->
 
 <div class="right">
 
@@ -337,29 +366,23 @@ JetTrend AI Terminal
 
 <script>
 
-/* DEFAULT STOCKS */
+/* DEFAULT SYMBOLS */
 
 let symbols=["AAPL","NVDA","TSLA","AMD","META"]
-
 let history={}
 symbols.forEach(s=>history[s]=[])
 
-/* NAV */
+/* NAVIGATION */
 
-function showPanel(panel){
+function showPanel(p){
 
-document.getElementById("scannerPanel").style.display="none"
-document.getElementById("flowPanel").style.display="none"
-document.getElementById("settingsPanel").style.display="none"
+["scannerPanel","searchPanel","flowPanel","settingsPanel"]
+.forEach(id=>document.getElementById(id).style.display="none")
 
-if(panel==="scanner")
-document.getElementById("scannerPanel").style.display="block"
-
-if(panel==="flow")
-document.getElementById("flowPanel").style.display="block"
-
-if(panel==="settings")
-document.getElementById("settingsPanel").style.display="block"
+if(p==="scanner")document.getElementById("scannerPanel").style.display="block"
+if(p==="search")document.getElementById("searchPanel").style.display="block"
+if(p==="flow")document.getElementById("flowPanel").style.display="block"
+if(p==="settings")document.getElementById("settingsPanel").style.display="block"
 
 }
 
@@ -369,15 +392,12 @@ async function getPrice(symbol){
 
 try{
 
-const res=await fetch(
-`https://curly-dream-6189.jetthetrader93.workers.dev/?symbol=${symbol}`
-)
+let r=await fetch(`https://curly-dream-6189.jetthetrader93.workers.dev/?symbol=${symbol}`)
+let d=await r.json()
 
-const data=await res.json()
+if(!d.price)return null
 
-if(!data.price) return null
-
-return Number(data.price)
+return Number(d.price)
 
 }catch{
 
@@ -389,13 +409,12 @@ return null
 
 /* EMA */
 
-function ema(data,p){
+function ema(d,p){
 
 let k=2/(p+1)
-let e=data[0]
+let e=d[0]
 
-for(let i=1;i<data.length;i++)
-e=data[i]*k+e*(1-k)
+for(let i=1;i<d.length;i++)e=d[i]*k+e*(1-k)
 
 return e
 
@@ -450,52 +469,65 @@ document.getElementById("alerts").prepend(div)
 
 }
 
-/* WATCHLIST */
+/* SEARCH */
 
-function addWatch(){
+async function searchTicker(){
 
-let s=document.getElementById("watchInput").value.toUpperCase()
+let s=document.getElementById("searchTicker").value.toUpperCase()
 
-symbols.push(s)
-history[s]=[]
+let p=await getPrice(s)
 
-document.getElementById("watchlist").innerHTML+=s+"<br>"
+if(!p)return
+
+if(!history[s])history[s]=[]
+
+history[s].push(p)
+
+let [signal,prob]=aiPrediction(history[s])
+
+document.getElementById("searchResult").innerHTML=
+
+`<b>${s}</b><br>Price ${p.toFixed(2)}<br>Signal ${signal}<br>Probability ${prob}
+<br><button onclick="saveQuickTicker('${s}')">Save</button>`
+
+loadChart(s)
 
 }
 
-/* METERS */
+/* QUICK ACCESS */
 
-function updateMeters(buys,sells){
+let quickTickers=["SPY","QQQ","AAPL","NVDA"]
 
-let total=buys+sells
-if(total===0) total=1
+function saveQuickTicker(t){
 
-let sentiment=Math.round((buys/total)*100)
+let saved=JSON.parse(localStorage.getItem("jettrend_quick"))||[]
 
-document.getElementById("sentimentGauge")
-.style.setProperty("--value",sentiment+"%")
+if(!saved.includes(t)){
+saved.push(t)
+localStorage.setItem("jettrend_quick",JSON.stringify(saved))
+}
 
-document.getElementById("sentimentText").innerText=
-buys>sells?"Bullish":sells>buys?"Bearish":"Neutral"
+loadQuick()
 
-document.getElementById("signalGauge")
-.style.setProperty("--value",(buys*10)+"%")
+}
 
-document.getElementById("strengthText").innerText=buys
+function loadQuick(){
 
-let momentum=buys-sells
-let m=Math.min(100,Math.abs(momentum)*20)
+let saved=JSON.parse(localStorage.getItem("jettrend_quick"))||quickTickers
 
-document.getElementById("momentumGauge")
-.style.setProperty("--value",m+"%")
+let q=document.getElementById("quickList")
 
-document.getElementById("momentumText").innerText=momentum
+q.innerHTML=""
 
-document.getElementById("bullBearGauge")
-.style.setProperty("--value",sentiment+"%")
+saved.forEach(t=>{
 
-document.getElementById("ratioText").innerText=
-`${buys}:${sells}`
+let b=document.createElement("button")
+b.innerText=t
+b.onclick=()=>searchTicker(t)
+
+q.appendChild(b)
+
+})
 
 }
 
@@ -511,39 +543,35 @@ let sell=0
 
 for(let s of symbols){
 
-let price=await getPrice(s)
+let p=await getPrice(s)
 
-if(price) history[s].push(price)
+if(p)history[s].push(p)
 
-if(history[s].length<25) continue
-
-let trend=Math.abs(
-ema(history[s].slice(-9),9)-
-ema(history[s].slice(-21),21)
-).toFixed(2)
+if(history[s].length<25)continue
 
 let [signal,prob]=aiPrediction(history[s])
 
-if(signal.includes("BUY")) buy++
-if(signal.includes("SELL")) sell++
+let trend=Math.abs(
+ema(history[s].slice(-9),9)-ema(history[s].slice(-21),21)
+).toFixed(2)
 
-let flows=["Sweep","Block","Split","Momentum"]
+if(signal.includes("BUY"))buy++
+if(signal.includes("SELL"))sell++
 
-let flow=flows[Math.floor(Math.random()*flows.length)]
+let flow=["Sweep","Block","Split","Momentum"]
+flow=flow[Math.floor(Math.random()*flow.length)]
 
 let tr=document.createElement("tr")
 
-tr.innerHTML=`
+tr.innerHTML=
 
-<td>${new Date().toLocaleTimeString()}</td>
+`<td>${new Date().toLocaleTimeString()}</td>
 <td class="symbol" onclick="loadChart('${s}')">${s}</td>
-<td>${price?price.toFixed(2):"-"}</td>
+<td>${p?p.toFixed(2):"-"}</td>
 <td class="${signal.includes('BUY')?'buy':'sell'}">${signal}</td>
 <td class="prob">${prob}</td>
 <td>${trend}</td>
-<td class="flow">${flow}</td>
-
-`
+<td class="flow">${flow}</td>`
 
 table.appendChild(tr)
 
@@ -553,37 +581,19 @@ updateMeters(buy,sell)
 
 }
 
-/* FLOW TABLE */
+/* METERS */
 
-function buildFlow(){
+function updateMeters(buys,sells){
 
-let flows=["Sweep","Block","Split"]
+let total=buys+sells||1
 
-let table=document.getElementById("flowTable")
+let sentiment=Math.round((buys/total)*100)
 
-table.innerHTML=""
+document.getElementById("sentimentGauge")
+.style.setProperty("--value",sentiment+"%")
 
-for(let i=0;i<6;i++){
-
-let s=symbols[Math.floor(Math.random()*symbols.length)]
-
-let size=Math.floor(Math.random()*50000)
-
-let premium="$"+Math.floor(size*2)
-
-table.innerHTML+=`
-
-<tr>
-<td>${new Date().toLocaleTimeString()}</td>
-<td>${s}</td>
-<td>${flows[Math.floor(Math.random()*flows.length)]}</td>
-<td>${size}</td>
-<td>${premium}</td>
-</tr>
-
-`
-
-}
+document.getElementById("sentimentText").innerText=
+buys>sells?"Bullish":sells>buys?"Bearish":"Neutral"
 
 }
 
@@ -595,8 +605,7 @@ let headlines=[
 "Nvidia leads AI rally",
 "Tesla volatility spikes",
 "Fed policy outlook moves markets",
-"Tech sector showing strength",
-"Energy stocks reacting to oil"
+"Tech sector strength continues"
 ]
 
 let n=document.getElementById("news")
@@ -604,34 +613,60 @@ let n=document.getElementById("news")
 n.innerHTML="<b>Market News</b>"
 
 headlines.forEach(h=>{
-
 let a=document.createElement("a")
 a.innerText="• "+h
 n.appendChild(a)
-
 })
 
 }
 
 /* TICKER */
 
-async function updateTicker(){
+async function ticker(){
 
 let t=document.getElementById("ticker")
-
 t.innerHTML=""
 
 for(let s of symbols){
 
 let p=await getPrice(s)
 
-if(!p) continue
+if(!p)continue
 
 let span=document.createElement("span")
-
 span.innerText=`${s} ${p.toFixed(2)}`
-
 t.appendChild(span)
+
+}
+
+}
+
+/* FLOW */
+
+function flow(){
+
+let table=document.getElementById("flowTable")
+table.innerHTML=""
+
+let types=["Sweep","Block","Split"]
+
+for(let i=0;i<6;i++){
+
+let s=symbols[Math.floor(Math.random()*symbols.length)]
+
+let size=Math.floor(Math.random()*50000)
+
+let premium="$"+size*2
+
+table.innerHTML+=
+
+`<tr>
+<td>${new Date().toLocaleTimeString()}</td>
+<td>${s}</td>
+<td>${types[Math.floor(Math.random()*types.length)]}</td>
+<td>${size}</td>
+<td>${premium}</td>
+</tr>`
 
 }
 
@@ -640,13 +675,14 @@ t.appendChild(span)
 /* INIT */
 
 news()
-updateTicker()
+loadQuick()
+ticker()
 buildScanner()
-buildFlow()
+flow()
 
 setInterval(buildScanner,20000)
-setInterval(updateTicker,10000)
-setInterval(buildFlow,15000)
+setInterval(ticker,10000)
+setInterval(flow,15000)
 
 </script>
 
