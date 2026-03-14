@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html>
 
@@ -23,6 +22,7 @@ padding:10px 20px;
 border-bottom:1px solid #333;
 display:flex;
 justify-content:space-between;
+font-weight:bold;
 }
 
 .layout{
@@ -82,7 +82,7 @@ border-radius:4px;
 
 .heatmap{
 display:grid;
-grid-template-columns:repeat(5,1fr);
+grid-template-columns:repeat(6,1fr);
 gap:5px;
 }
 
@@ -96,6 +96,18 @@ font-weight:bold;
 .green{background:#006b3f;}
 .red{background:#7a0000;}
 
+.ticker{
+display:flex;
+gap:20px;
+}
+
+.mover{
+display:flex;
+justify-content:space-between;
+padding:6px 0;
+border-bottom:1px solid #222;
+}
+
 </style>
 
 </head>
@@ -104,9 +116,7 @@ font-weight:bold;
 
 <div class="topbar">
 
-<div>
-SPY | QQQ | DIA
-</div>
+<div class="ticker" id="ticker"></div>
 
 <div>
 JetTrend Market Dashboard
@@ -154,13 +164,23 @@ JetTrend Market Dashboard
 
 </div>
 
+<div class="panel">
+
+<h3>Top Movers</h3>
+
+<div id="gainers"></div>
+<div id="losers"></div>
+
+</div>
+
 </div>
 
 <script>
 
 const symbols=[
 "AAPL","NVDA","TSLA","AMD","META",
-"MSFT","SPY","QQQ","AMZN","GOOGL"
+"MSFT","SPY","QQQ","AMZN","GOOGL",
+"NFLX","AVGO","TSM","SHOP","COIN"
 ]
 
 let lastPrices={}
@@ -241,6 +261,54 @@ heat.appendChild(box)
 
 }
 
+function buildTicker(data){
+
+let ticker=document.getElementById("ticker")
+
+ticker.innerHTML=""
+
+for(let s of ["SPY","QQQ","DIA"]){
+
+let div=document.createElement("div")
+
+div.innerText=s+" "+(data[s]??"-")
+
+ticker.appendChild(div)
+
+}
+
+}
+
+function buildMovers(changes){
+
+let sorted=[...changes].sort((a,b)=>b.change-a.change)
+
+let gainers=document.getElementById("gainers")
+let losers=document.getElementById("losers")
+
+gainers.innerHTML="<b>Top Gainers</b>"
+losers.innerHTML="<b>Top Losers</b>"
+
+sorted.slice(0,5).forEach(s=>{
+
+let div=document.createElement("div")
+div.className="mover"
+div.innerHTML=`${s.symbol} <span class="buy">${s.change.toFixed(2)}</span>`
+gainers.appendChild(div)
+
+})
+
+sorted.slice(-5).forEach(s=>{
+
+let div=document.createElement("div")
+div.className="mover"
+div.innerHTML=`${s.symbol} <span class="sell">${s.change.toFixed(2)}</span>`
+losers.appendChild(div)
+
+})
+
+}
+
 async function buildScanner(){
 
 let table=document.getElementById("scanner")
@@ -249,9 +317,14 @@ let heat=document.getElementById("heatmap")
 table.innerHTML=""
 heat.innerHTML=""
 
+let priceData={}
+let changes=[]
+
 for(let s of symbols){
 
 let price=await getPrice(s)
+
+priceData[s]=price
 
 let tr=document.createElement("tr")
 
@@ -278,9 +351,18 @@ tr.appendChild(signalCell)
 
 table.appendChild(tr)
 
-if(price && lastPrices[s] && price!==lastPrices[s]){
+if(price && lastPrices[s]){
+
+let change=price-lastPrices[s]
+
+changes.push({symbol:s,change})
+
+if(change!==0){
 
 addAlert(s+" moved to "+price.toFixed(2))
+
+}
+
 addHeat(s,price,lastPrices[s])
 
 }
@@ -288,6 +370,9 @@ addHeat(s,price,lastPrices[s])
 lastPrices[s]=price
 
 }
+
+buildTicker(priceData)
+buildMovers(changes)
 
 }
 
@@ -302,4 +387,3 @@ loadChart("AAPL")
 </body>
 
 </html>
-```
