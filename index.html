@@ -101,6 +101,16 @@ margin-top:20px;
 height:500px;
 }
 
+.buy{
+color:#00ff9c;
+font-weight:bold;
+}
+
+.sell{
+color:#ff4d4d;
+font-weight:bold;
+}
+
 </style>
 
 </head>
@@ -155,29 +165,22 @@ JetTrend Market Terminal
 <script>
 
 const symbols=[
-"AAPL",
-"NVDA",
-"TSLA",
-"AMD",
-"META",
-"MSFT",
-"SPY",
-"QQQ"
+"AAPL","NVDA","TSLA","AMD","META","MSFT","SPY","QQQ"
 ]
+
+let lastPrices={}
 
 async function getPrice(symbol){
 
 try{
 
-const res = await fetch(
+const res=await fetch(
 `https://curly-dream-6189.jetthetrader93.workers.dev/?symbol=${symbol}`
 )
 
-const data = await res.json()
+const data=await res.json()
 
-if(!data.price){
-return null
-}
+if(!data.price) return null
 
 return parseFloat(data.price)
 
@@ -215,6 +218,18 @@ document.getElementById("alerts").prepend(div)
 
 }
 
+function getSignal(price,last){
+
+if(!last) return "NEUTRAL"
+
+if(price>last) return "BUY"
+
+if(price<last) return "SELL"
+
+return "NEUTRAL"
+
+}
+
 async function buildScanner(){
 
 let table=document.getElementById("scanner")
@@ -234,23 +249,31 @@ sym.onclick=()=>loadChart(s)
 
 let priceCell=document.createElement("td")
 
-priceCell.innerText =
-price !== null ? price.toFixed(2) : "-"
+priceCell.innerText=
+price!==null?price.toFixed(2):"-"
 
-let sigCell=document.createElement("td")
+let signalCell=document.createElement("td")
 
-sigCell.innerText =
-price !== null ? "ACTIVE" : "NEUTRAL"
+let signal=getSignal(price,lastPrices[s])
+
+signalCell.innerText=signal
+
+if(signal==="BUY") signalCell.className="buy"
+if(signal==="SELL") signalCell.className="sell"
 
 tr.appendChild(sym)
 tr.appendChild(priceCell)
-tr.appendChild(sigCell)
+tr.appendChild(signalCell)
 
 table.appendChild(tr)
 
-if(price!==null){
-addAlert(s+" price updated")
+if(price!==null && lastPrices[s] && price!==lastPrices[s]){
+
+addAlert(s+" moved to "+price.toFixed(2))
+
 }
+
+lastPrices[s]=price
 
 }
 
@@ -258,7 +281,7 @@ addAlert(s+" price updated")
 
 buildScanner()
 
-setInterval(buildScanner,30000)
+setInterval(buildScanner,20000)
 
 </script>
 
