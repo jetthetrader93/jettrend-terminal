@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html>
 
@@ -168,11 +169,15 @@ async function getPrice(symbol){
 
 try{
 
-const res=await fetch(
+const res = await fetch(
 `https://curly-dream-6189.jetthetrader93.workers.dev/?symbol=${symbol}`
 )
 
-const data=await res.json()
+const data = await res.json()
+
+if(!data.price){
+return null
+}
 
 return parseFloat(data.price)
 
@@ -228,19 +233,14 @@ sym.className="symbol"
 sym.onclick=()=>loadChart(s)
 
 let priceCell=document.createElement("td")
-priceCell.innerText=price ? price.toFixed(2) : "-"
+
+priceCell.innerText =
+price !== null ? price.toFixed(2) : "-"
 
 let sigCell=document.createElement("td")
 
-if(price){
-
-sigCell.innerText="ACTIVE"
-
-}else{
-
-sigCell.innerText="NEUTRAL"
-
-}
+sigCell.innerText =
+price !== null ? "ACTIVE" : "NEUTRAL"
 
 tr.appendChild(sym)
 tr.appendChild(priceCell)
@@ -248,7 +248,7 @@ tr.appendChild(sigCell)
 
 table.appendChild(tr)
 
-if(price){
+if(price!==null){
 addAlert(s+" price updated")
 }
 
@@ -265,3 +265,4 @@ setInterval(buildScanner,30000)
 </body>
 
 </html>
+```
