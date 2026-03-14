@@ -3,7 +3,7 @@
 
 <head>
 
-<title>JetTrend AI Trading Terminal</title>
+<title>JetTrend AI Terminal</title>
 
 <script src="https://s3.tradingview.com/tv.js"></script>
 
@@ -44,7 +44,7 @@ cursor:pointer;
 
 .container{
 display:grid;
-grid-template-columns:70px 1fr 320px;
+grid-template-columns:70px 1fr 360px;
 grid-template-rows:60px 40px 80px auto 1fr;
 height:100vh;
 }
@@ -151,8 +151,6 @@ color:#00ff9c;
 .buy{color:#00ff9c;}
 .sell{color:#ff4d4d;}
 
-/* CHART */
-
 #chart{
 margin-top:20px;
 height:500px;
@@ -162,16 +160,27 @@ display:none;
 /* NEWS */
 
 .newsCard{
-display:flex;
 background:#151515;
-margin-bottom:10px;
 border-radius:6px;
+margin-bottom:10px;
 overflow:hidden;
 }
 
-.newsCard img{
-width:120px;
-height:80px;
+.newsHeader{
+display:flex;
+align-items:center;
+gap:10px;
+padding:10px;
+}
+
+.newsHeader img{
+width:26px;
+height:26px;
+}
+
+.newsCard img.cover{
+width:100%;
+height:140px;
 object-fit:cover;
 }
 
@@ -179,10 +188,8 @@ object-fit:cover;
 padding:10px;
 }
 
-.newsText h4{
-margin:0;
-font-size:14px;
-}
+.sentimentBull{color:#00ff9c;}
+.sentimentBear{color:#ff4d4d;}
 
 </style>
 
@@ -194,9 +201,7 @@ font-size:14px;
 
 <h1>AI Trading <span>Terminal</span></h1>
 
-<p>
-JetTrend detects institutional activity, breakout probability, and market sentiment using AI scanners.
-</p>
+<p>Institutional flow detection and AI trade scanning.</p>
 
 <button onclick="launchTerminal()">Launch Terminal</button>
 
@@ -212,11 +217,7 @@ JetTrend detects institutional activity, breakout probability, and market sentim
 
 </div>
 
-<div class="topbar">
-
-JetTrend AI Terminal
-
-</div>
+<div class="topbar">JetTrend AI Terminal</div>
 
 <div class="ticker" id="ticker"></div>
 
@@ -225,7 +226,6 @@ JetTrend AI Terminal
 <div class="gauge">
 
 Trend Sentiment
-
 <h2 id="sentiment">Neutral</h2>
 
 </div>
@@ -233,7 +233,6 @@ Trend Sentiment
 <div class="gauge">
 
 AI Strength
-
 <h2 id="strength">0</h2>
 
 </div>
@@ -247,9 +246,7 @@ AI Strength
 <table>
 
 <thead>
-
 <tr>
-
 <th>Symbol</th>
 <th>Price</th>
 <th>Signal</th>
@@ -257,9 +254,7 @@ AI Strength
 <th>Breakout%</th>
 <th>Volume</th>
 <th>Activity</th>
-
 </tr>
-
 </thead>
 
 <tbody id="scanner"></tbody>
@@ -272,33 +267,13 @@ AI Strength
 
 <div id="aiSignals"></div>
 
-<h3>Market News</h3>
-
-<input id="newsSearch" placeholder="Search news">
-
-<button onclick="searchNews()">Search</button>
-
-<div id="news"></div>
-
 </div>
 
 <div class="right">
 
-<h3>Watchlist</h3>
+<h3 id="newsTitle">Company News</h3>
 
-<div id="watchlist"></div>
-
-<input id="addTicker" placeholder="Add ticker">
-
-<button onclick="addWatch()">Add</button>
-
-<h3>Top Gainers</h3>
-
-<div id="gainers"></div>
-
-<h3>Top Losers</h3>
-
-<div id="losers"></div>
+<div id="news"></div>
 
 </div>
 
@@ -307,10 +282,7 @@ AI Strength
 <script>
 
 function launchTerminal(){
-
-document.getElementById("terminal")
-.scrollIntoView({behavior:"smooth"})
-
+document.getElementById("terminal").scrollIntoView({behavior:"smooth"})
 }
 
 /* SYMBOLS */
@@ -335,7 +307,6 @@ async function getPrice(symbol){
 try{
 
 let r=await fetch(`https://curly-dream-6189.jetthetrader93.workers.dev/?symbol=${symbol}`)
-
 let d=await r.json()
 
 return Number(d.price)
@@ -373,7 +344,6 @@ let e21=ema(h.slice(-21),21)
 let e120=ema(h.slice(-120),120)
 
 if(e9>e120 && e21>e120) return "Bullish"
-
 if(e9<e120 && e21<e120) return "Bearish"
 
 return "Sideways"
@@ -390,7 +360,6 @@ let e9=ema(h.slice(-9),9)
 let e21=ema(h.slice(-21),21)
 
 if(e9>e21) return "BUY"
-
 if(e9<e21) return "SELL"
 
 return "NEUTRAL"
@@ -475,21 +444,13 @@ aiBoard+=`${s} breakout probability ${breakout}%<br>`
 
 rows+=`
 <tr>
-
 <td class="symbol" onclick="loadChart('${s}')">${s}</td>
-
 <td>${p?p.toFixed(2):"-"}</td>
-
 <td class="${signal==="BUY"?"buy":"sell"}">${signal}</td>
-
 <td>${trend}</td>
-
 <td>${breakout}%</td>
-
 <td>${vol}</td>
-
 <td>${act}</td>
-
 </tr>
 `
 
@@ -512,15 +473,81 @@ document.getElementById("chart").style.display="block"
 document.getElementById("chart").innerHTML=""
 
 new TradingView.widget({
-
 container_id:"chart",
 symbol:symbol,
 interval:"5",
 theme:"dark",
 width:"100%",
 height:500
+})
+
+loadTickerNews(symbol)
+
+}
+
+/* NEWS SENTIMENT */
+
+function sentimentScore(text){
+
+text=text.toLowerCase()
+
+if(text.includes("upgrade") || text.includes("surge") || text.includes("growth"))
+return "Bullish"
+
+if(text.includes("lawsuit") || text.includes("drop") || text.includes("cut"))
+return "Bearish"
+
+return "Neutral"
+
+}
+
+/* TICKER NEWS */
+
+async function loadTickerNews(symbol){
+
+document.getElementById("newsTitle").innerText=symbol+" News"
+
+let r=await fetch(`https://finnhub.io/api/v1/company-news?symbol=${symbol}&from=2024-01-01&to=2026-12-31&token=demo`)
+
+let news=await r.json()
+
+let html=""
+
+news.slice(0,6).forEach(n=>{
+
+let sentiment=sentimentScore(n.headline)
+
+html+=`
+<div class="newsCard">
+
+<img class="cover" src="${n.image}">
+
+<div class="newsHeader">
+
+<img src="https://logo.clearbit.com/${symbol}.com">
+
+<b>${symbol}</b>
+
+<span class="${sentiment==="Bullish"?"sentimentBull":"sentimentBear"}">${sentiment}</span>
+
+</div>
+
+<div class="newsText">
+
+<h4>${n.headline}</h4>
+
+<p>${n.summary}</p>
+
+<a href="${n.url}" target="_blank">Read</a>
+
+</div>
+
+</div>
+`
 
 })
+
+document.getElementById("news").innerHTML=html
 
 }
 
@@ -544,125 +571,10 @@ document.getElementById("ticker").innerHTML=html
 
 }
 
-/* WATCHLIST */
-
-let watch=JSON.parse(localStorage.getItem("watchlist")||"[]")
-
-function addWatch(){
-
-let t=document.getElementById("addTicker").value.toUpperCase()
-
-watch.push(t)
-
-localStorage.setItem("watchlist",JSON.stringify(watch))
-
-loadWatch()
-
-}
-
-function loadWatch(){
-
-document.getElementById("watchlist").innerHTML=
-watch.join("<br>")
-
-}
-
-/* NEWS */
-
-async function loadNews(){
-
-let r=await fetch("https://finnhub.io/api/v1/news?category=general&token=demo")
-
-let news=await r.json()
-
-let html=""
-
-news.slice(0,6).forEach(n=>{
-
-html+=`
-<div class="newsCard">
-
-<img src="${n.image}">
-
-<div class="newsText">
-
-<h4>${n.headline}</h4>
-
-<a href="${n.url}" target="_blank">Read</a>
-
-</div>
-
-</div>
-`
-
-})
-
-document.getElementById("news").innerHTML=html
-
-}
-
-/* NEWS SEARCH */
-
-async function searchNews(){
-
-let q=document.getElementById("newsSearch").value
-
-let r=await fetch(`https://newsapi.org/v2/everything?q=${q}&apiKey=demo`)
-
-let d=await r.json()
-
-let html=""
-
-d.articles.slice(0,6).forEach(a=>{
-
-html+=`
-<div class="newsCard">
-
-<img src="${a.urlToImage}">
-
-<div class="newsText">
-
-<h4>${a.title}</h4>
-
-<a href="${a.url}" target="_blank">Read</a>
-
-</div>
-
-</div>
-`
-
-})
-
-document.getElementById("news").innerHTML=html
-
-}
-
-/* MOVERS */
-
-function marketMovers(){
-
-let moves=symbols.map(s=>({
-symbol:s,
-move:Math.random()*6-3
-}))
-
-moves.sort((a,b)=>b.move-a.move)
-
-document.getElementById("gainers").innerHTML=
-moves.slice(0,3).map(m=>`${m.symbol} +${m.move.toFixed(2)}%`).join("<br>")
-
-document.getElementById("losers").innerHTML=
-moves.slice(-3).map(m=>`${m.symbol} ${m.move.toFixed(2)}%`).join("<br>")
-
-}
-
 /* INIT */
 
 buildScanner()
 ticker()
-loadWatch()
-loadNews()
-marketMovers()
 
 setInterval(buildScanner,4000)
 setInterval(ticker,4000)
