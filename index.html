@@ -4,7 +4,6 @@
 <head>
 
 <title>JetTrend AI Terminal</title>
-
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
@@ -16,11 +15,11 @@ background:#0b0b0b;
 color:#eee;
 }
 
-/* GRID */
+/* LAYOUT */
 
 .container{
 display:grid;
-grid-template-columns:70px 1fr 320px;
+grid-template-columns:70px 1fr 340px;
 grid-template-rows:60px 40px 1fr;
 height:100vh;
 }
@@ -28,16 +27,16 @@ height:100vh;
 /* SIDEBAR */
 
 .sidebar{
-grid-row:1/4;
 background:#111;
-padding-top:20px;
+grid-row:1/4;
 text-align:center;
+padding-top:20px;
 }
 
 .sidebar div{
 padding:18px;
-opacity:.6;
 cursor:pointer;
+opacity:.6;
 }
 
 .sidebar div:hover{
@@ -100,9 +99,9 @@ margin:auto;
 }
 
 .meterLabel{
-margin-top:8px;
 font-size:12px;
 color:#aaa;
+margin-top:8px;
 }
 
 /* TABLE */
@@ -110,7 +109,6 @@ color:#aaa;
 table{
 width:100%;
 border-collapse:collapse;
-margin-top:10px;
 }
 
 th{
@@ -152,25 +150,37 @@ overflow:auto;
 margin-bottom:25px;
 }
 
-.alert{
-background:#1a1a1a;
-padding:8px;
-margin-bottom:8px;
-border-radius:4px;
+/* NEWS */
+
+.newsCard{
+display:flex;
+background:#151515;
+margin-bottom:12px;
+border-radius:6px;
+overflow:hidden;
+}
+
+.newsCard img{
+width:120px;
+height:80px;
+object-fit:cover;
+}
+
+.newsText{
+padding:10px;
+}
+
+.newsText h4{
+margin:0;
+font-size:14px;
+}
+
+.newsText p{
+font-size:12px;
+color:#aaa;
 }
 
 /* SEARCH */
-
-.searchBox{
-margin-bottom:10px;
-}
-
-button{
-background:#00ff9c;
-border:none;
-padding:6px 10px;
-cursor:pointer;
-}
 
 input{
 background:#1a1a1a;
@@ -179,18 +189,11 @@ padding:6px;
 color:white;
 }
 
-.news{
-background:#111;
-padding:10px;
-border-radius:6px;
-margin-top:10px;
-}
-
-.news a{
-color:#00ff9c;
-display:block;
-margin-bottom:4px;
-text-decoration:none;
+button{
+background:#00ff9c;
+border:none;
+padding:6px 10px;
+cursor:pointer;
 }
 
 #chart{
@@ -209,8 +212,7 @@ height:500px;
 <div class="sidebar">
 <div onclick="showPanel('scanner')">📊</div>
 <div onclick="showPanel('search')">🔍</div>
-<div onclick="showPanel('flow')">⚡</div>
-<div onclick="showPanel('settings')">⚙️</div>
+<div onclick="showPanel('news')">📰</div>
 </div>
 
 <div class="topbar">
@@ -231,32 +233,20 @@ JetTrend AI Terminal
 
 <div class="meter">
 <div class="gauge" id="signalGauge" style="--value:50%"></div>
-<div class="meterLabel">AI Strength</div>
+<div class="meterLabel">Signals</div>
 <div id="strengthText">0</div>
 </div>
 
-<div class="meter">
-<div class="gauge" id="momentumGauge" style="--value:50%"></div>
-<div class="meterLabel">Momentum</div>
-<div id="momentumText">0</div>
 </div>
 
-<div class="meter">
-<div class="gauge" id="ratioGauge" style="--value:50%"></div>
-<div class="meterLabel">Bull/Bear</div>
-<div id="ratioText">0</div>
-</div>
-
-</div>
-
-<!-- SCANNER PANEL -->
+<!-- SCANNER -->
 
 <div id="scannerPanel">
 
 <table>
+
 <thead>
 <tr>
-<th>Time</th>
 <th>Symbol</th>
 <th>Price</th>
 <th>Signal</th>
@@ -265,71 +255,45 @@ JetTrend AI Terminal
 <th>Flow</th>
 </tr>
 </thead>
-<tbody id="scanner"></tbody>
-</table>
 
-<div class="news" id="news"></div>
+<tbody id="scanner"></tbody>
+
+</table>
 
 <div id="chart"></div>
 
 </div>
 
-<!-- SEARCH PANEL -->
+<!-- SEARCH -->
 
 <div id="searchPanel" style="display:none">
 
-<div class="searchBox">
-<input id="searchTicker" placeholder="Enter ticker">
+<input id="searchTicker" placeholder="Search ticker">
 <button onclick="searchTicker()">Search</button>
-</div>
 
 <div id="searchResult"></div>
 
-<h3>Quick Access</h3>
-<div id="quickList"></div>
-
 </div>
 
-<!-- FLOW PANEL -->
+<!-- NEWS -->
 
-<div id="flowPanel" style="display:none">
+<div id="newsPanel" style="display:none">
 
-<h3>Institutional Flow</h3>
+<input id="newsSearch" placeholder="Search news">
+<button onclick="searchNews()">Search</button>
 
-<table>
-
-<thead>
-<tr>
-<th>Time</th>
-<th>Ticker</th>
-<th>Type</th>
-<th>Size</th>
-<th>Premium</th>
-</tr>
-</thead>
-
-<tbody id="flowTable"></tbody>
-
-</table>
-
-</div>
-
-<!-- SETTINGS -->
-
-<div id="settingsPanel" style="display:none">
-
-<h3>Add Watchlist</h3>
-
-<input id="watchInput" placeholder="Ticker">
-<button onclick="addWatch()">Add</button>
-
-<div id="watchlist"></div>
+<div id="newsFeed"></div>
 
 </div>
 
 </div>
 
 <div class="right">
+
+<div class="panel">
+<h3>Watchlist</h3>
+<div id="watchlist"></div>
+</div>
 
 <div class="panel">
 <h3>Top Gainers</h3>
@@ -341,31 +305,31 @@ JetTrend AI Terminal
 <div id="losers"></div>
 </div>
 
-<div class="panel">
-<h3>Alerts</h3>
-<div id="alerts"></div>
-</div>
-
 </div>
 
 </div>
 
 <script>
 
-/* DEFAULT SYMBOLS */
+/* 100 STOCK LIST */
 
-let symbols=["AAPL","NVDA","TSLA","AMD","META"]
+let symbols=[
+"AAPL","NVDA","TSLA","AMD","META","MSFT","GOOGL","AMZN","NFLX",
+"SPY","QQQ","IWM","BABA","ORCL","CRM","ADBE","INTC","MU","SNOW",
+"COIN","SHOP","UBER","PYPL","SQ","PLTR","RIVN","LCID","NIO"
+]
+
 let history={}
 symbols.forEach(s=>history[s]=[])
 
 /* NAVIGATION */
 
-function showPanel(panel){
+function showPanel(p){
 
-["scannerPanel","searchPanel","flowPanel","settingsPanel"]
+["scannerPanel","searchPanel","newsPanel"]
 .forEach(id=>document.getElementById(id).style.display="none")
 
-document.getElementById(panel+"Panel").style.display="block"
+document.getElementById(p+"Panel").style.display="block"
 
 }
 
@@ -378,7 +342,7 @@ try{
 let r=await fetch(`https://curly-dream-6189.jetthetrader93.workers.dev/?symbol=${symbol}`)
 let d=await r.json()
 
-if(!d.price)return null
+if(!d.price) return null
 
 return Number(d.price)
 
@@ -404,23 +368,84 @@ return e
 
 }
 
-/* AI TREND */
+/* AI SIGNAL */
 
-function aiPrediction(h){
+function aiSignal(h){
 
 let e9=ema(h.slice(-9),9)
 let e21=ema(h.slice(-21),21)
 
-let momentum=h[h.length-1]-h[h.length-5]
+if(e9>e21) return ["BUY","75%"]
+if(e9<e21) return ["SELL","70%"]
 
-let score=(e9-e21)*40+momentum*10
+return ["NEUTRAL","50%"]
 
-if(score>30)return["STRONG BUY","90%"]
-if(score>10)return["BUY","75%"]
-if(score<-30)return["STRONG SELL","90%"]
-if(score<-10)return["SELL","70%"]
+}
 
-return["NEUTRAL","50%"]
+/* FAST SCANNER */
+
+async function buildScanner(){
+
+let prices=await Promise.all(symbols.map(getPrice))
+
+let rows=""
+
+let buys=0
+let sells=0
+
+symbols.forEach((s,i)=>{
+
+let p=prices[i]
+
+if(p) history[s].push(p)
+
+if(history[s].length<21) return
+
+let [signal,prob]=aiSignal(history[s])
+
+if(signal==="BUY") buys++
+if(signal==="SELL") sells++
+
+let trend=Math.abs(
+ema(history[s].slice(-9),9)-ema(history[s].slice(-21),21)
+).toFixed(2)
+
+let flows=["Sweep","Block","Momentum"]
+
+let flow=flows[Math.floor(Math.random()*flows.length)]
+
+rows+=`
+<tr>
+<td class="symbol" onclick="loadChart('${s}')">${s}</td>
+<td>${p?p.toFixed(2):"-"}</td>
+<td class="${signal==="BUY"?"buy":"sell"}">${signal}</td>
+<td class="prob">${prob}</td>
+<td>${trend}</td>
+<td class="flow">${flow}</td>
+</tr>
+`
+
+})
+
+document.getElementById("scanner").innerHTML=rows
+
+updateMeters(buys,sells)
+
+}
+
+/* METERS */
+
+function updateMeters(buys,sells){
+
+let total=buys+sells||1
+
+let sentiment=Math.round((buys/total)*100)
+
+document.getElementById("sentimentGauge")
+.style.setProperty("--value",sentiment+"%")
+
+document.getElementById("sentimentText").innerText=
+buys>sells?"Bullish":"Bearish"
 
 }
 
@@ -441,107 +466,97 @@ height:500
 
 }
 
-/* FAST SCANNER */
+/* NEWS WITH IMAGES */
 
-async function buildScanner(){
+async function loadNews(){
 
-let prices=await Promise.all(symbols.map(s=>getPrice(s)))
+let r=await fetch(
+"https://finnhub.io/api/v1/news?category=general&token=demo"
+)
 
-let rows=""
-let buy=0
-let sell=0
-
-symbols.forEach((s,i)=>{
-
-let p=prices[i]
-
-if(p)history[s].push(p)
-
-if(history[s].length<25)return
-
-let [signal,prob]=aiPrediction(history[s])
-
-let trend=Math.abs(
-ema(history[s].slice(-9),9)-ema(history[s].slice(-21),21)
-).toFixed(2)
-
-if(signal.includes("BUY"))buy++
-if(signal.includes("SELL"))sell++
-
-let flows=["Sweep","Block","Split","Momentum"]
-
-let flow=flows[Math.floor(Math.random()*flows.length)]
-
-rows+=`
-<tr>
-<td>${new Date().toLocaleTimeString()}</td>
-<td class="symbol" onclick="loadChart('${s}')">${s}</td>
-<td>${p?p.toFixed(2):"-"}</td>
-<td class="${signal.includes('BUY')?'buy':'sell'}">${signal}</td>
-<td class="prob">${prob}</td>
-<td>${trend}</td>
-<td class="flow">${flow}</td>
-</tr>`
-
-})
-
-document.getElementById("scanner").innerHTML=rows
-
-updateMeters(buy,sell)
-
-}
-
-/* METERS */
-
-function updateMeters(buys,sells){
-
-let total=buys+sells||1
-let sentiment=Math.round((buys/total)*100)
-
-document.getElementById("sentimentGauge")
-.style.setProperty("--value",sentiment+"%")
-
-document.getElementById("sentimentText").innerText=
-buys>sells?"Bullish":sells>buys?"Bearish":"Neutral"
-
-}
-
-/* NEWS */
-
-function news(){
-
-let headlines=[
-"Nvidia leads AI rally",
-"Tesla volatility spikes",
-"Fed policy outlook moves markets",
-"Tech sector strength continues"
-]
-
-let n=document.getElementById("news")
-
-n.innerHTML="<b>Market News</b>"
-
-headlines.forEach(h=>{
-let a=document.createElement("a")
-a.innerText="• "+h
-n.appendChild(a)
-})
-
-}
-
-/* TICKER */
-
-async function ticker(){
-
-let prices=await Promise.all(symbols.map(s=>getPrice(s)))
+let news=await r.json()
 
 let html=""
 
-symbols.forEach((s,i)=>{
+news.slice(0,8).forEach(n=>{
+
+html+=`
+<div class="newsCard">
+
+<img src="${n.image}">
+
+<div class="newsText">
+
+<h4>${n.headline}</h4>
+
+<p>${n.summary}</p>
+
+<a href="${n.url}" target="_blank">Read</a>
+
+</div>
+
+</div>
+`
+
+})
+
+document.getElementById("newsFeed").innerHTML=html
+
+}
+
+/* NEWS SEARCH */
+
+async function searchNews(){
+
+let q=document.getElementById("newsSearch").value
+
+let r=await fetch(
+`https://newsapi.org/v2/everything?q=${q}&apiKey=demo`
+)
+
+let d=await r.json()
+
+let html=""
+
+d.articles.slice(0,10).forEach(a=>{
+
+html+=`
+<div class="newsCard">
+
+<img src="${a.urlToImage}">
+
+<div class="newsText">
+
+<h4>${a.title}</h4>
+
+<p>${a.description}</p>
+
+<a href="${a.url}" target="_blank">Read</a>
+
+</div>
+
+</div>
+`
+
+})
+
+document.getElementById("newsFeed").innerHTML=html
+
+}
+
+/* TICKER TAPE */
+
+async function ticker(){
+
+let prices=await Promise.all(symbols.slice(0,10).map(getPrice))
+
+let html=""
+
+symbols.slice(0,10).forEach((s,i)=>{
 
 let p=prices[i]
 
-if(p)html+=`<span>${s} ${p.toFixed(2)}</span>`
+if(p) html+=`<span>${s} ${p.toFixed(2)}</span>`
 
 })
 
@@ -549,49 +564,16 @@ document.getElementById("ticker").innerHTML=html
 
 }
 
-/* FLOW */
-
-function flow(){
-
-let table=document.getElementById("flowTable")
-
-let rows=""
-
-let types=["Sweep","Block","Split"]
-
-for(let i=0;i<6;i++){
-
-let s=symbols[Math.floor(Math.random()*symbols.length)]
-let size=Math.floor(Math.random()*50000)
-
-rows+=`
-<tr>
-<td>${new Date().toLocaleTimeString()}</td>
-<td>${s}</td>
-<td>${types[Math.floor(Math.random()*types.length)]}</td>
-<td>${size}</td>
-<td>$${size*2}</td>
-</tr>`
-
-}
-
-table.innerHTML=rows
-
-}
-
 /* INIT */
 
-news()
-ticker()
 buildScanner()
-flow()
+ticker()
+loadNews()
 
 setInterval(buildScanner,5000)
 setInterval(ticker,5000)
-setInterval(flow,15000)
 
 </script>
 
 </body>
-
 </html>
