@@ -3,23 +3,27 @@
 <html>
 <head>
 
-<title>JetTrend Terminal</title>
+<title>JetTrend Market Terminal</title>
+
+<script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
 
 body{
 margin:0;
+font-family:Arial;
 background:#0b0b0b;
 color:white;
-font-family:Arial;
 }
 
 .container{
 display:grid;
-grid-template-columns:70px 1fr 350px;
-grid-template-rows:80px 1fr;
+grid-template-columns:70px 1fr 320px;
+grid-template-rows:70px 1fr;
 height:100vh;
 }
+
+/* SIDEBAR */
 
 .sidebar{
 grid-row:1 / 3;
@@ -29,34 +33,28 @@ padding-top:20px;
 }
 
 .sidebar div{
-padding:20px;
-cursor:pointer;
+padding:18px;
 opacity:.7;
+cursor:pointer;
 }
 
 .sidebar div:hover{
 opacity:1;
 }
 
+/* TOPBAR */
+
 .topbar{
 grid-column:2 / 4;
 background:#141414;
 display:flex;
-justify-content:space-around;
 align-items:center;
+padding-left:20px;
 border-bottom:1px solid #333;
+font-weight:bold;
 }
 
-.gauge{
-width:80px;
-height:80px;
-border-radius:50%;
-background:conic-gradient(#00ff9c 0% 50%, #333 50% 100%);
-display:flex;
-align-items:center;
-justify-content:center;
-font-size:20px;
-}
+/* MAIN */
 
 .main{
 padding:15px;
@@ -68,10 +66,16 @@ width:100%;
 border-collapse:collapse;
 }
 
-th,td{
+th{
+text-align:left;
+padding:10px;
+border-bottom:1px solid #333;
+color:#aaa;
+}
+
+td{
 padding:10px;
 border-bottom:1px solid #222;
-text-align:center;
 }
 
 .symbol{
@@ -79,14 +83,20 @@ font-weight:bold;
 cursor:pointer;
 }
 
-.buy{color:#00ff9c}
-.sell{color:#ff4d4d}
-.neutral{color:#aaa}
+.symbol:hover{
+color:#00ff9c;
+}
+
+.green{color:#00ff9c}
+.red{color:#ff4d4d}
+
+/* RIGHT PANEL */
 
 .right{
 background:#141414;
 border-left:1px solid #333;
 padding:15px;
+overflow:auto;
 }
 
 .alert{
@@ -98,7 +108,7 @@ border-radius:4px;
 
 #chart{
 margin-top:20px;
-height:550px;
+height:520px;
 }
 
 </style>
@@ -117,38 +127,25 @@ height:550px;
 </div>
 
 <div class="topbar">
-
-<div>
-<div class="gauge">50</div>
-<div>Sentiment</div>
-</div>
-
-<div>
-<div class="gauge">50</div>
-<div>Market Strength</div>
-</div>
-
-<div>
-<div class="gauge">0</div>
-<div>Active Signals</div>
-</div>
-
+JetTrend Market Terminal
 </div>
 
 <div class="main">
 
-<h3>JetTrend Signal Feed</h3>
+<h3>Market Scanner</h3>
 
 <table>
 
 <thead>
 <tr>
 <th>Symbol</th>
+<th>Price</th>
+<th>Change</th>
 <th>Signal</th>
 </tr>
 </thead>
 
-<tbody id="table"></tbody>
+<tbody id="scanner"></tbody>
 
 </table>
 
@@ -158,7 +155,7 @@ height:550px;
 
 <div class="right">
 
-<h3>Signal Alerts</h3>
+<h3>Alerts</h3>
 
 <div id="alerts"></div>
 
@@ -168,67 +165,49 @@ height:550px;
 
 <script>
 
-const stocks=[
-"AAPL",
-"NVDA",
-"TSLA",
-"AMD",
-"META",
-"MSFT",
-"SPY",
-"QQQ"
+const symbols=[
+"AAPL","NVDA","TSLA","AMD","META","MSFT","SPY","QQQ"
 ]
 
-function randomSignal(){
+async function getQuote(symbol){
 
-const r=Math.random()
+const url=`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`
 
-if(r>.66) return "BUY"
-if(r<.33) return "SELL"
+try{
+
+const res=await fetch(url)
+const data=await res.json()
+
+const q=data.quoteResponse.result[0]
+
+return{
+price:q.regularMarketPrice,
+change:q.regularMarketChangePercent
+}
+
+}catch{
+
+return{price:"-",change:0}
+
+}
+
+}
+
+function signalFromChange(change){
+
+if(change>1) return "BUY"
+if(change<-1) return "SELL"
 
 return "NEUTRAL"
 
 }
 
-function signalClass(s){
+function signalColor(sig){
 
-if(s=="BUY") return "buy"
-if(s=="SELL") return "sell"
+if(sig=="BUY") return "green"
+if(sig=="SELL") return "red"
 
-return "neutral"
-
-}
-
-function buildScanner(){
-
-const table=document.getElementById("table")
-
-stocks.forEach(s=>{
-
-const sig=randomSignal()
-
-let tr=document.createElement("tr")
-
-let sym=document.createElement("td")
-sym.innerText=s
-sym.className="symbol"
-
-sym.onclick=()=>loadChart(s)
-
-let signal=document.createElement("td")
-signal.innerText=sig
-signal.className=signalClass(sig)
-
-tr.appendChild(sym)
-tr.appendChild(signal)
-
-table.appendChild(tr)
-
-if(sig=="BUY"){
-addAlert(s+" JetTrend BUY")
-}
-
-})
+return ""
 
 }
 
@@ -245,20 +224,70 @@ document.getElementById("alerts").prepend(alert)
 
 function loadChart(symbol){
 
-document.getElementById("chart").innerHTML=
-`<iframe
-width="100%"
-height="550"
-src="https://s.tradingview.com/widgetembed/?symbol=${symbol}&interval=5&theme=dark"
-frameborder="0">
-</iframe>`
+document.getElementById("chart").innerHTML=""
+
+new TradingView.widget({
+container_id:"chart",
+symbol:symbol,
+interval:"5",
+theme:"dark",
+style:"1",
+width:"100%",
+height:520
+})
+
+}
+
+async function buildScanner(){
+
+let table=document.getElementById("scanner")
+
+table.innerHTML=""
+
+for(let s of symbols){
+
+let q=await getQuote(s)
+
+let signal=signalFromChange(q.change)
+
+let tr=document.createElement("tr")
+
+let sym=document.createElement("td")
+sym.innerText=s
+sym.className="symbol"
+sym.onclick=()=>loadChart(s)
+
+let price=document.createElement("td")
+price.innerText=q.price
+
+let change=document.createElement("td")
+change.innerText=q.change.toFixed(2)+"%"
+
+if(q.change>0) change.className="green"
+if(q.change<0) change.className="red"
+
+let sig=document.createElement("td")
+sig.innerText=signal
+sig.className=signalColor(signal)
+
+tr.appendChild(sym)
+tr.appendChild(price)
+tr.appendChild(change)
+tr.appendChild(sig)
+
+table.appendChild(tr)
+
+if(signal=="BUY") addAlert(s+" momentum BUY")
+
+}
 
 }
 
 buildScanner()
 
+setInterval(buildScanner,30000)
+
 </script>
 
 </body>
-
 </html>
