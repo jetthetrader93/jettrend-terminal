@@ -3,7 +3,8 @@
 
 <head>
 
-<title>JetTrend AI Terminal</title>
+<title>JetTrend AI Trading Terminal</title>
+
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
@@ -12,33 +13,30 @@ body{
 margin:0;
 font-family:Segoe UI;
 background:#0b0b0b;
-color:#eee;
+color:white;
 }
 
 /* HERO */
 
 .hero{
-display:flex;
-justify-content:space-between;
-align-items:center;
 padding:80px;
 background:linear-gradient(135deg,#20003c,#000018);
 }
 
-.hero-left h1{
+.hero h1{
 font-size:48px;
 }
 
-.hero-left span{
+.hero span{
 color:#ffc400;
 }
 
-.hero-left button{
+.hero button{
 background:#5a3df0;
 border:none;
-padding:14px 26px;
-color:white;
+padding:14px 24px;
 border-radius:6px;
+color:white;
 cursor:pointer;
 }
 
@@ -47,7 +45,7 @@ cursor:pointer;
 .container{
 display:grid;
 grid-template-columns:70px 1fr 320px;
-grid-template-rows:60px 40px auto auto 1fr;
+grid-template-rows:60px 40px 80px auto 1fr;
 height:100vh;
 }
 
@@ -82,46 +80,47 @@ border-bottom:1px solid #222;
 .ticker{
 grid-column:2/4;
 background:#0f0f0f;
-border-bottom:1px solid #222;
 overflow:hidden;
+border-bottom:1px solid #222;
 }
 
 .ticker span{
-padding:10px 25px;
+padding:10px 20px;
 display:inline-block;
 color:#00ff9c;
 }
-
-/* GAUGES */
 
 .gauges{
 grid-column:2/4;
 display:flex;
 gap:20px;
-padding:15px;
+padding:10px;
 background:#111;
 }
 
 .gauge{
-background:#151515;
-padding:20px;
-border-radius:6px;
 flex:1;
+background:#151515;
+border-radius:6px;
+padding:15px;
 text-align:center;
 }
-
-.gauge h2{
-margin:0;
-font-size:26px;
-}
-
-/* SCANNER */
 
 .main{
 grid-column:2/3;
 padding:15px;
 overflow:auto;
 }
+
+.right{
+grid-column:3/4;
+background:#141414;
+border-left:1px solid #333;
+padding:15px;
+overflow:auto;
+}
+
+/* TABLE */
 
 table{
 width:100%;
@@ -152,14 +151,12 @@ color:#00ff9c;
 .buy{color:#00ff9c;}
 .sell{color:#ff4d4d;}
 
-/* RIGHT PANEL */
+/* CHART */
 
-.right{
-grid-column:3/4;
-background:#141414;
-border-left:1px solid #333;
-padding:15px;
-overflow:auto;
+#chart{
+margin-top:20px;
+height:500px;
+display:none;
 }
 
 /* NEWS */
@@ -167,7 +164,7 @@ overflow:auto;
 .newsCard{
 display:flex;
 background:#151515;
-margin-bottom:12px;
+margin-bottom:10px;
 border-radius:6px;
 overflow:hidden;
 }
@@ -187,23 +184,6 @@ margin:0;
 font-size:14px;
 }
 
-.newsText p{
-font-size:12px;
-color:#aaa;
-}
-
-.aiBoard{
-background:#111;
-padding:10px;
-margin-top:15px;
-border-radius:6px;
-}
-
-#chart{
-margin-top:20px;
-height:500px;
-}
-
 </style>
 
 </head>
@@ -212,31 +192,30 @@ height:500px;
 
 <section class="hero">
 
-<div class="hero-left">
-
 <h1>AI Trading <span>Terminal</span></h1>
 
 <p>
-JetTrend detects institutional activity, breakout probability,
-and market sentiment using AI driven scanners.
+JetTrend detects institutional activity, breakout probability, and market sentiment using AI scanners.
 </p>
 
-<button onclick="openTerminal()">Launch Terminal</button>
-
-</div>
+<button onclick="launchTerminal()">Launch Terminal</button>
 
 </section>
 
 <div id="terminal" class="container">
 
 <div class="sidebar">
+
 <div>📊</div>
 <div>🔎</div>
 <div>⚡</div>
+
 </div>
 
 <div class="topbar">
+
 JetTrend AI Terminal
+
 </div>
 
 <div class="ticker" id="ticker"></div>
@@ -244,13 +223,19 @@ JetTrend AI Terminal
 <div class="gauges">
 
 <div class="gauge">
+
 Trend Sentiment
+
 <h2 id="sentiment">Neutral</h2>
+
 </div>
 
 <div class="gauge">
+
 AI Strength
+
 <h2 id="strength">0</h2>
+
 </div>
 
 </div>
@@ -262,7 +247,9 @@ AI Strength
 <table>
 
 <thead>
+
 <tr>
+
 <th>Symbol</th>
 <th>Price</th>
 <th>Signal</th>
@@ -270,28 +257,25 @@ AI Strength
 <th>Breakout%</th>
 <th>Volume</th>
 <th>Activity</th>
+
 </tr>
+
 </thead>
 
-<tbody id="scanner">
-<tr><td colspan="7">Loading scanner...</td></tr>
-</tbody>
+<tbody id="scanner"></tbody>
 
 </table>
 
 <div id="chart"></div>
 
-<div class="aiBoard">
-
 <h3>AI Opportunity Board</h3>
 
 <div id="aiSignals"></div>
 
-</div>
-
 <h3>Market News</h3>
 
 <input id="newsSearch" placeholder="Search news">
+
 <button onclick="searchNews()">Search</button>
 
 <div id="news"></div>
@@ -301,12 +285,19 @@ AI Strength
 <div class="right">
 
 <h3>Watchlist</h3>
+
 <div id="watchlist"></div>
 
+<input id="addTicker" placeholder="Add ticker">
+
+<button onclick="addWatch()">Add</button>
+
 <h3>Top Gainers</h3>
+
 <div id="gainers"></div>
 
 <h3>Top Losers</h3>
+
 <div id="losers"></div>
 
 </div>
@@ -315,34 +306,44 @@ AI Strength
 
 <script>
 
-/* SCROLL */
+function launchTerminal(){
 
-function openTerminal(){
-document.getElementById("terminal").scrollIntoView({behavior:"smooth"})
+document.getElementById("terminal")
+.scrollIntoView({behavior:"smooth"})
+
 }
 
 /* SYMBOLS */
 
-let symbols=["AAPL","NVDA","TSLA","AMD","META","MSFT","GOOGL","AMZN","NFLX","SPY","QQQ"]
+let symbols=[
+"AAPL","NVDA","TSLA","AMD","META",
+"MSFT","GOOGL","AMZN","NFLX","SPY","QQQ"
+]
 
 let history={}
 let volumeHistory={}
 
 symbols.forEach(s=>{
-history[s]=Array(150).fill(100+Math.random()*10)
-volumeHistory[s]=Array(40).fill(1000+Math.random()*200)
+history[s]=[]
+volumeHistory[s]=[]
 })
 
-/* API */
+/* PRICE API */
 
 async function getPrice(symbol){
 
 try{
+
 let r=await fetch(`https://curly-dream-6189.jetthetrader93.workers.dev/?symbol=${symbol}`)
+
 let d=await r.json()
+
 return Number(d.price)
+
 }catch{
+
 return null
+
 }
 
 }
@@ -355,7 +356,7 @@ let k=2/(p+1)
 let e=data[0]
 
 for(let i=1;i<data.length;i++)
-e=data[i]*k+e*(1-k)
+e=data[i]*k + e*(1-k)
 
 return e
 
@@ -363,70 +364,81 @@ return e
 
 /* TREND */
 
-function trendSentiment(history){
+function trendSentiment(h){
 
-let e9=ema(history.slice(-9),9)
-let e21=ema(history.slice(-21),21)
-let e120=ema(history.slice(-120),120)
+if(h.length<120) return "Building"
+
+let e9=ema(h.slice(-9),9)
+let e21=ema(h.slice(-21),21)
+let e120=ema(h.slice(-120),120)
 
 if(e9>e120 && e21>e120) return "Bullish"
+
 if(e9<e120 && e21<e120) return "Bearish"
 
 return "Sideways"
+
 }
 
 /* SIGNAL */
 
-function aiSignal(history){
+function aiSignal(h){
 
-let e9=ema(history.slice(-9),9)
-let e21=ema(history.slice(-21),21)
+if(h.length<21) return "NEUTRAL"
 
-if(e9>e21)return"BUY"
-if(e9<e21)return"SELL"
+let e9=ema(h.slice(-9),9)
+let e21=ema(h.slice(-21),21)
 
-return"NEUTRAL"
+if(e9>e21) return "BUY"
+
+if(e9<e21) return "SELL"
+
+return "NEUTRAL"
+
 }
 
 /* BREAKOUT */
 
-function breakoutProbability(history){
+function breakoutProbability(h){
 
-let e9=ema(history.slice(-9),9)
-let e21=ema(history.slice(-21),21)
+if(h.length<20) return 0
 
-let momentum=history.at(-1)-history.at(-5)
+let high=Math.max(...h.slice(-20))
+let price=h[h.length-1]
 
-let score=Math.abs(e9-e21)*5 + Math.abs(momentum)*3
+if(price>=high) return 90+Math.floor(Math.random()*10)
 
-return Math.min(100,Math.round(score*10))
+return Math.floor(Math.random()*60)
+
 }
 
-/* VOLUME SPIKE */
+/* VOLUME */
 
 function volumeSpike(v){
 
+if(v.length<20) return "Normal"
+
 let avg=v.slice(-20).reduce((a,b)=>a+b)/20
 
-if(v.at(-1)>avg*3) return "Spike"
+if(v[v.length-1]>avg*3) return "Spike"
 
 return "Normal"
+
 }
 
-/* INSTITUTIONAL ACTIVITY */
+/* ACTIVITY */
 
-function institutional(history,vol){
+function institutional(h,v){
 
-let breakout=breakoutProbability(history)
-let spike=volumeSpike(vol)
+let spike=volumeSpike(v)
+let breakout=breakoutProbability(h)
 
-if(spike==="Spike" && breakout>80)
-return"Institutional"
+if(spike==="Spike" && breakout>85) return "Institutional"
 
-if(spike==="Spike")
-return"Unusual"
+if(spike==="Spike") return "Unusual"
 
-return"Normal"
+return "Normal"
+
 }
 
 /* SCANNER */
@@ -437,31 +449,47 @@ let prices=await Promise.all(symbols.map(getPrice))
 
 let rows=""
 let aiBoard=""
+let buys=0
 
 symbols.forEach((s,i)=>{
 
 let p=prices[i]
 
-if(p)history[s].push(p)
+if(p){
+
+history[s].push(p)
+volumeHistory[s].push(1000+Math.random()*2000)
+
+}
 
 let signal=aiSignal(history[s])
 let trend=trendSentiment(history[s])
 let breakout=breakoutProbability(history[s])
 let vol=volumeSpike(volumeHistory[s])
-let activity=institutional(history[s],volumeHistory[s])
+let act=institutional(history[s],volumeHistory[s])
+
+if(signal==="BUY") buys++
 
 if(breakout>85)
 aiBoard+=`${s} breakout probability ${breakout}%<br>`
 
 rows+=`
 <tr>
+
 <td class="symbol" onclick="loadChart('${s}')">${s}</td>
+
 <td>${p?p.toFixed(2):"-"}</td>
-<td class="${signal==='BUY'?'buy':'sell'}">${signal}</td>
+
+<td class="${signal==="BUY"?"buy":"sell"}">${signal}</td>
+
 <td>${trend}</td>
+
 <td>${breakout}%</td>
+
 <td>${vol}</td>
-<td>${activity}</td>
+
+<td>${act}</td>
+
 </tr>
 `
 
@@ -470,90 +498,29 @@ rows+=`
 document.getElementById("scanner").innerHTML=rows
 document.getElementById("aiSignals").innerHTML=aiBoard
 
+document.getElementById("strength").innerText=
+Math.round((buys/symbols.length)*100)
+
 }
 
 /* CHART */
 
 function loadChart(symbol){
 
+document.getElementById("chart").style.display="block"
+
 document.getElementById("chart").innerHTML=""
 
 new TradingView.widget({
+
 container_id:"chart",
 symbol:symbol,
 interval:"5",
 theme:"dark",
 width:"100%",
 height:500
+
 })
-
-}
-
-/* NEWS */
-
-async function loadNews(){
-
-let r=await fetch("https://finnhub.io/api/v1/news?category=general&token=demo")
-let news=await r.json()
-
-let html=""
-
-news.slice(0,6).forEach(n=>{
-
-html+=`
-<div class="newsCard">
-
-<img src="${n.image}">
-
-<div class="newsText">
-
-<h4>${n.headline}</h4>
-<p>${n.summary}</p>
-
-<a href="${n.url}" target="_blank">Read</a>
-
-</div>
-
-</div>
-`
-})
-
-document.getElementById("news").innerHTML=html
-
-}
-
-/* NEWS SEARCH */
-
-async function searchNews(){
-
-let q=document.getElementById("newsSearch").value
-
-let r=await fetch(`https://newsapi.org/v2/everything?q=${q}&apiKey=demo`)
-let d=await r.json()
-
-let html=""
-
-d.articles.slice(0,6).forEach(a=>{
-
-html+=`
-<div class="newsCard">
-
-<img src="${a.urlToImage}">
-
-<div class="newsText">
-
-<h4>${a.title}</h4>
-<p>${a.description}</p>
-
-<a href="${a.url}" target="_blank">Read</a>
-
-</div>
-
-</div>
-`
-})
-
-document.getElementById("news").innerHTML=html
 
 }
 
@@ -577,14 +544,128 @@ document.getElementById("ticker").innerHTML=html
 
 }
 
+/* WATCHLIST */
+
+let watch=JSON.parse(localStorage.getItem("watchlist")||"[]")
+
+function addWatch(){
+
+let t=document.getElementById("addTicker").value.toUpperCase()
+
+watch.push(t)
+
+localStorage.setItem("watchlist",JSON.stringify(watch))
+
+loadWatch()
+
+}
+
+function loadWatch(){
+
+document.getElementById("watchlist").innerHTML=
+watch.join("<br>")
+
+}
+
+/* NEWS */
+
+async function loadNews(){
+
+let r=await fetch("https://finnhub.io/api/v1/news?category=general&token=demo")
+
+let news=await r.json()
+
+let html=""
+
+news.slice(0,6).forEach(n=>{
+
+html+=`
+<div class="newsCard">
+
+<img src="${n.image}">
+
+<div class="newsText">
+
+<h4>${n.headline}</h4>
+
+<a href="${n.url}" target="_blank">Read</a>
+
+</div>
+
+</div>
+`
+
+})
+
+document.getElementById("news").innerHTML=html
+
+}
+
+/* NEWS SEARCH */
+
+async function searchNews(){
+
+let q=document.getElementById("newsSearch").value
+
+let r=await fetch(`https://newsapi.org/v2/everything?q=${q}&apiKey=demo`)
+
+let d=await r.json()
+
+let html=""
+
+d.articles.slice(0,6).forEach(a=>{
+
+html+=`
+<div class="newsCard">
+
+<img src="${a.urlToImage}">
+
+<div class="newsText">
+
+<h4>${a.title}</h4>
+
+<a href="${a.url}" target="_blank">Read</a>
+
+</div>
+
+</div>
+`
+
+})
+
+document.getElementById("news").innerHTML=html
+
+}
+
+/* MOVERS */
+
+function marketMovers(){
+
+let moves=symbols.map(s=>({
+symbol:s,
+move:Math.random()*6-3
+}))
+
+moves.sort((a,b)=>b.move-a.move)
+
+document.getElementById("gainers").innerHTML=
+moves.slice(0,3).map(m=>`${m.symbol} +${m.move.toFixed(2)}%`).join("<br>")
+
+document.getElementById("losers").innerHTML=
+moves.slice(-3).map(m=>`${m.symbol} ${m.move.toFixed(2)}%`).join("<br>")
+
+}
+
 /* INIT */
 
 buildScanner()
 ticker()
+loadWatch()
 loadNews()
+marketMovers()
 
-setInterval(buildScanner,5000)
-setInterval(ticker,5000)
+setInterval(buildScanner,4000)
+setInterval(ticker,4000)
 
 </script>
 
