@@ -1,91 +1,80 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 
 <title>JetTrend AI Terminal</title>
-
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
 
 body{
 margin:0;
-font-family:Segoe UI;
-background:#0a0a0a;
+font-family:Arial;
+background:#0b0b0b;
 color:white;
 }
 
-/* SIDEBAR */
+.container{
+display:grid;
+grid-template-columns:70px 1fr 320px;
+grid-template-rows:60px 1fr;
+height:100vh;
+}
 
 .sidebar{
-position:fixed;
-width:70px;
-height:100%;
+grid-row:1/3;
 background:#111;
-display:flex;
-flex-direction:column;
-align-items:center;
+text-align:center;
 padding-top:20px;
 }
 
 .sidebar div{
-margin:20px 0;
-opacity:.6;
-cursor:pointer;
-font-size:20px;
+padding:18px;
+opacity:.7;
 }
 
 .sidebar div:hover{
 opacity:1;
 }
 
-/* MAIN */
+.topbar{
+grid-column:2/4;
+background:#141414;
+display:flex;
+align-items:center;
+padding-left:20px;
+font-weight:bold;
+border-bottom:1px solid #333;
+}
 
 .main{
-margin-left:70px;
-margin-right:260px;
 padding:15px;
+overflow:auto;
 }
 
-/* TOP BAR */
-
-.topbar{
+.cards{
 display:flex;
-justify-content:space-between;
-align-items:center;
-margin-bottom:10px;
+gap:15px;
+margin-bottom:20px;
 }
 
-.ticker{
-display:flex;
-gap:25px;
+.card{
+background:#141414;
+padding:15px;
+border-radius:6px;
+flex:1;
+}
+
+.card h3{
+margin:0;
 font-size:14px;
 color:#aaa;
 }
 
-/* METRICS */
-
-.metrics{
-display:grid;
-grid-template-columns:repeat(3,1fr);
-gap:12px;
-margin-bottom:15px;
+.card div{
+font-size:22px;
+margin-top:5px;
 }
-
-.metric{
-background:#131313;
-padding:16px;
-border-radius:8px;
-border:1px solid #1f1f1f;
-}
-
-.metric span{
-font-size:26px;
-font-weight:600;
-}
-
-/* TABLE */
 
 table{
 width:100%;
@@ -93,15 +82,15 @@ border-collapse:collapse;
 }
 
 th{
-color:#888;
 text-align:left;
-padding:8px;
-border-bottom:1px solid #222;
+padding:10px;
+border-bottom:1px solid #333;
+color:#aaa;
 }
 
 td{
-padding:8px;
-border-bottom:1px solid #1a1a1a;
+padding:10px;
+border-bottom:1px solid #222;
 }
 
 .symbol{
@@ -113,89 +102,88 @@ cursor:pointer;
 color:#00ff9c;
 }
 
-.buy{color:#00ff9c}
-.sell{color:#ff4d4d}
+.buy{
+color:#00ff9c;
+font-weight:bold;
+}
 
-/* ALERT PANEL */
+.sell{
+color:#ff4d4d;
+font-weight:bold;
+}
+
+.flow{
+color:#f0c330;
+}
+
+.news{
+background:#111;
+padding:10px;
+border-radius:6px;
+margin-bottom:15px;
+}
+
+.news a{
+color:#00ff9c;
+text-decoration:none;
+display:block;
+margin-bottom:5px;
+}
 
 .right{
-position:fixed;
-right:0;
-top:0;
-width:260px;
-height:100%;
-background:#111;
+background:#141414;
+border-left:1px solid #333;
 padding:15px;
 overflow:auto;
 }
 
 .alert{
-background:#1e1e1e;
-padding:8px;
-margin-bottom:8px;
-border-radius:3px;
-font-size:13px;
+background:#1a1a1a;
+padding:10px;
+margin-bottom:10px;
+border-radius:4px;
 }
-
-/* CHART */
 
 #chart{
 margin-top:15px;
-height:420px;
+height:500px;
 }
 
 </style>
-
 </head>
 
 <body>
 
-<!-- SIDEBAR -->
+<div class="container">
 
 <div class="sidebar">
 <div>📊</div>
 <div>🔎</div>
-<div>📈</div>
 <div>⚡</div>
 <div>⚙️</div>
 </div>
 
-<!-- ALERTS -->
-
-<div class="right">
-<h3>Alerts</h3>
-<div id="alerts"></div>
+<div class="topbar">
+JetTrend AI Terminal
 </div>
-
-<!-- MAIN -->
 
 <div class="main">
 
-<div class="topbar">
+<div class="cards">
 
-<h2>JetTrend AI Terminal</h2>
-
-<div id="ticker" class="ticker"></div>
-
+<div class="card">
+<h3>Market Sentiment</h3>
+<div id="sentiment">Neutral</div>
 </div>
 
-<!-- METRICS -->
-
-<div class="metrics">
-
-<div class="metric">
-Market Sentiment<br>
-<span id="sentiment">Neutral</span>
+<div class="card">
+<h3>AI Signal Strength</h3>
+<div id="strength">0</div>
 </div>
 
-<div class="metric">
-AI Signal Strength<br>
-<span id="strength">0.00</span>
-</div>
-
-<div class="metric">
-Momentum Ratio<br>
-<span id="ratio">0</span>
+<div class="card">
+<h3>Momentum Ratio</h3>
+<div id="momentum">0</div>
 </div>
 
 </div>
@@ -208,6 +196,7 @@ Momentum Ratio<br>
 <th>Symbol</th>
 <th>Price</th>
 <th>AI Signal</th>
+<th>Trend Strength</th>
 <th>Flow</th>
 </tr>
 </thead>
@@ -216,26 +205,29 @@ Momentum Ratio<br>
 
 </table>
 
+<div class="news" id="news">
+<b>Market News</b>
+</div>
+
 <div id="chart"></div>
+
+</div>
+
+<div class="right">
+
+<h3>Alerts</h3>
+<div id="alerts"></div>
+
+</div>
 
 </div>
 
 <script>
 
-/* SCANNER STOCKS */
+const symbols=["AAPL","NVDA","TSLA","AMD","META"]
 
-const stocks=[
-"AAPL",
-"NVDA",
-"TSLA",
-"AMD",
-"META"
-]
-
-let history={}
-let lastPrice={}
-
-/* SAFE PRICE FETCH */
+const history={}
+symbols.forEach(s=>history[s]=[])
 
 async function getPrice(symbol){
 
@@ -249,7 +241,7 @@ const data = await res.json()
 
 if(!data || !data.price) return null
 
-const price = Number(data.price)
+const price=Number(data.price)
 
 if(isNaN(price)) return null
 
@@ -263,38 +255,43 @@ return null
 
 }
 
-/* EMA CALCULATION */
-
-function ema(values,period){
+function ema(data,period){
 
 let k=2/(period+1)
-let ema=values[0]
+let ema=data[0]
 
-for(let i=1;i<values.length;i++){
-ema=values[i]*k+ema*(1-k)
-}
+for(let i=1;i<data.length;i++)
+ema=data[i]*k+ema*(1-k)
 
 return ema
 
 }
 
-/* AI SIGNAL */
+function trendStrength(e9,e21){
 
-function aiSignal(prices){
+let diff=Math.abs(e9-e21)
 
-if(prices.length<21) return "NEUTRAL"
-
-let ema9=ema(prices.slice(-9),9)
-let ema21=ema(prices.slice(-21),21)
-
-if(ema9>ema21) return "BUY"
-if(ema9<ema21) return "SELL"
-
-return "NEUTRAL"
+return diff.toFixed(2)
 
 }
 
-/* ALERT */
+function loadChart(symbol){
+
+document.getElementById("chart").innerHTML=""
+
+new TradingView.widget({
+
+container_id:"chart",
+symbol:symbol,
+interval:"5",
+theme:"dark",
+style:"1",
+width:"100%",
+height:500
+
+})
+
+}
 
 function addAlert(text){
 
@@ -306,75 +303,75 @@ document.getElementById("alerts").prepend(div)
 
 }
 
-/* CHART */
+function updateNews(){
 
-function loadChart(symbol){
+const headlines=[
+"Fed signals possible rate cuts later this year",
+"Nvidia leads AI stock rally",
+"Tesla volatility increases on delivery numbers",
+"Tech sector outperforming market today",
+"Oil prices impacting energy stocks"
+]
 
-document.getElementById("chart").innerHTML=""
+let news=document.getElementById("news")
+news.innerHTML="<b>Market News</b>"
 
-new TradingView.widget({
-container_id:"chart",
-symbol:symbol,
-interval:"5",
-theme:"dark",
-width:"100%",
-height:420
+headlines.forEach(h=>{
+
+let a=document.createElement("a")
+a.innerText="• "+h
+news.appendChild(a)
+
 })
 
 }
 
-/* TICKER */
-
-function buildTicker(data){
-
-let ticker=document.getElementById("ticker")
-
-ticker.innerHTML=""
-
-for(let s of ["SPY","QQQ","DIA"]){
-
-let d=document.createElement("div")
-
-d.innerText = s + " " + (data[s] ? data[s].toFixed(2) : "-")
-
-ticker.appendChild(d)
-
-}
-
-}
-
-/* BUILD SCANNER */
-
-async function build(){
+async function buildScanner(){
 
 let table=document.getElementById("scanner")
+
 table.innerHTML=""
 
-let prices={}
-let buys=0
-let sells=0
+let buyCount=0
+let sellCount=0
 
-for(let s of stocks){
+for(let s of symbols){
 
 let price=await getPrice(s)
 
-prices[s]=price
+let time=new Date().toLocaleTimeString()
 
-if(!history[s]) history[s]=[]
+if(price){
+history[s].push(price)
+}
 
-if(price) history[s].push(price)
+if(history[s].length<25)
+continue
 
-if(history[s].length>50) history[s].shift()
+let e9=ema(history[s].slice(-9),9)
+let e21=ema(history[s].slice(-21),21)
 
-let signal=aiSignal(history[s])
+let signal="NEUTRAL"
 
-if(signal==="BUY") buys++
-if(signal==="SELL") sells++
+if(e9>e21){
+signal="BUY"
+buyCount++
+}
+
+if(e9<e21){
+signal="SELL"
+sellCount++
+}
+
+let strength=trendStrength(e9,e21)
+
+const flows=["Sweep","Block","Split","Momentum"]
+let flow=flows[Math.floor(Math.random()*flows.length)]
 
 let tr=document.createElement("tr")
 
-let time=document.createElement("td")
-time.innerText=new Date().toLocaleTimeString()
+let t=document.createElement("td")
+t.innerText=time
 
 let sym=document.createElement("td")
 sym.innerText=s
@@ -386,72 +383,47 @@ p.innerText=price?price.toFixed(2):"-"
 
 let sig=document.createElement("td")
 sig.innerText=signal
+sig.className=signal=="BUY"?"buy":signal=="SELL"?"sell":""
 
-if(signal==="BUY"){
-sig.className="buy"
-sig.innerText="▲ BUY"
-}
+let st=document.createElement("td")
+st.innerText=strength
 
-if(signal==="SELL"){
-sig.className="sell"
-sig.innerText="▼ SELL"
-}
+let f=document.createElement("td")
+f.innerText=flow
+f.className="flow"
 
-/* FLOW COLUMN */
-
-let flow=document.createElement("td")
-
-const flows=["Sweep","Block","Split","Momentum"]
-
-let f=flows[Math.floor(Math.random()*flows.length)]
-
-flow.innerText=f
-
-if(f==="Sweep") flow.style.color="#00ff9c"
-if(f==="Block") flow.style.color="#5dafff"
-if(f==="Split") flow.style.color="#ffd166"
-if(f==="Momentum") flow.style.color="#ff4d4d"
-
-tr.appendChild(time)
+tr.appendChild(t)
 tr.appendChild(sym)
 tr.appendChild(p)
 tr.appendChild(sig)
-tr.appendChild(flow)
+tr.appendChild(st)
+tr.appendChild(f)
 
 table.appendChild(tr)
 
-if(lastPrice[s] && price && price!==lastPrice[s]){
-addAlert(s+" moved to "+price.toFixed(2))
-}
-
-lastPrice[s]=price
+if(signal!="NEUTRAL")
+addAlert(s+" "+signal+" signal")
 
 }
-
-/* MARKET SENTIMENT */
 
 let sentiment="Neutral"
 
-if(buys>sells) sentiment="Bullish"
-if(sells>buys) sentiment="Bearish"
+if(buyCount>sellCount) sentiment="Bullish"
+if(sellCount>buyCount) sentiment="Bearish"
 
 document.getElementById("sentiment").innerText=sentiment
-document.getElementById("strength").innerText=(buys/(buys+sells+1)).toFixed(2)
-document.getElementById("ratio").innerText=(buys-sells)
-
-buildTicker(prices)
+document.getElementById("strength").innerText=buyCount
+document.getElementById("momentum").innerText=(buyCount-sellCount)
 
 }
 
-/* RUN */
+updateNews()
 
-build()
-setInterval(build,20000)
+buildScanner()
 
-loadChart("AAPL")
+setInterval(buildScanner,20000)
 
 </script>
 
 </body>
-
 </html>
