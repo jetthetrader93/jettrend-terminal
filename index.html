@@ -11,46 +11,31 @@
 
 body{
 margin:0;
-font-family:Segoe UI;
+font-family:Arial;
 background:#0b0b0b;
 color:white;
 }
 
-/* HERO */
-
-.hero{
-padding:80px;
-background:linear-gradient(135deg,#20003c,#000018);
-}
-
-.hero h1{
-font-size:48px;
-}
-
-.hero span{
-color:#ffc400;
-}
-
-/* TERMINAL */
+/* Layout */
 
 .container{
 display:grid;
-grid-template-columns:70px 1fr 380px;
-grid-template-rows:60px 40px 80px auto auto 1fr;
+grid-template-columns:70px 1fr 360px;
+grid-template-rows:60px 40px 80px 1fr;
 height:100vh;
 }
 
 .sidebar{
+grid-row:1/5;
 background:#111;
-grid-row:1/7;
 text-align:center;
 padding-top:20px;
 }
 
 .sidebar div{
-padding:18px;
-opacity:.7;
+padding:20px;
 cursor:pointer;
+opacity:.7;
 }
 
 .sidebar div:hover{
@@ -64,7 +49,8 @@ background:#141414;
 display:flex;
 align-items:center;
 padding-left:20px;
-border-bottom:1px solid #222;
+border-bottom:1px solid #333;
+font-weight:bold;
 }
 
 .ticker{
@@ -90,15 +76,21 @@ background:#111;
 .gauge{
 flex:1;
 background:#151515;
-padding:15px;
 border-radius:6px;
+padding:10px;
 text-align:center;
 }
 
-/* SCANNER */
-
 .main{
 grid-column:2/3;
+padding:15px;
+overflow:auto;
+}
+
+.right{
+grid-column:3/4;
+background:#141414;
+border-left:1px solid #333;
 padding:15px;
 overflow:auto;
 }
@@ -121,16 +113,16 @@ border-bottom:1px solid #222;
 }
 
 .symbol{
-font-weight:bold;
 cursor:pointer;
+font-weight:bold;
 }
 
 .symbol:hover{
 color:#00ff9c;
 }
 
-.buy{color:#00ff9c;}
-.sell{color:#ff4d4d;}
+.buy{color:#00ff9c}
+.sell{color:#ff4d4d}
 
 #chart{
 height:500px;
@@ -138,44 +130,29 @@ display:none;
 margin-top:20px;
 }
 
-/* RIGHT PANEL */
+/* Alerts */
 
-.right{
-grid-column:3/4;
-background:#141414;
-border-left:1px solid #333;
-padding:15px;
-overflow:auto;
+#alerts{
+position:fixed;
+top:20px;
+right:20px;
+width:260px;
 }
 
-/* HEATMAP */
-
-.heatmap{
-display:grid;
-grid-template-columns:repeat(3,1fr);
-gap:5px;
-margin-bottom:20px;
-}
-
-.heatmap div{
-padding:20px;
-text-align:center;
+.alert{
+background:#111;
+border-left:4px solid #00ff9c;
+padding:10px;
+margin-bottom:10px;
 border-radius:4px;
-font-weight:bold;
 }
 
-/* FLOW TABLE */
-
-.flowTable td{
-font-size:12px;
-}
-
-/* NEWS */
+/* News */
 
 .newsCard{
 background:#151515;
-border-radius:6px;
 margin-bottom:10px;
+border-radius:6px;
 overflow:hidden;
 }
 
@@ -195,17 +172,19 @@ padding:10px;
 
 <body>
 
+<div id="alerts"></div>
+
 <div class="container">
 
 <div class="sidebar">
-
 <div>📊</div>
 <div>🔎</div>
 <div>⚡</div>
-
 </div>
 
-<div class="topbar">JetTrend AI Terminal</div>
+<div class="topbar">
+JetTrend AI Terminal
+</div>
 
 <div class="ticker" id="ticker"></div>
 
@@ -234,7 +213,6 @@ AI Strength
 <th>Symbol</th>
 <th>Price</th>
 <th>Signal</th>
-<th>Trend</th>
 <th>Breakout%</th>
 </tr>
 </thead>
@@ -246,38 +224,16 @@ AI Strength
 <div id="chart"></div>
 
 <h3>AI Opportunity Radar</h3>
-<div id="aiSignals"></div>
+<div id="aiRadar"></div>
 
-<h3>Institutional Flow</h3>
-
-<table class="flowTable">
-
-<thead>
-
-<tr>
-<th>Time</th>
-<th>Symbol</th>
-<th>Type</th>
-<th>Size</th>
-<th>Premium</th>
-</tr>
-
-</thead>
-
-<tbody id="flow"></tbody>
-
-</table>
+<h3>Historical Alerts</h3>
+<div id="alertHistory"></div>
 
 </div>
 
 <div class="right">
 
-<h3>Market Heatmap</h3>
-
-<div class="heatmap" id="heatmap"></div>
-
 <h3>Company News</h3>
-
 <div id="news"></div>
 
 </div>
@@ -286,24 +242,33 @@ AI Strength
 
 <script>
 
-let symbols=["AAPL","NVDA","TSLA","AMD","META","MSFT","GOOGL","AMZN","SPY"]
+/* SYMBOL LIST */
+
+const symbols=["AAPL","NVDA","TSLA","AMD","META","MSFT","SPY"]
 
 let history={}
+let alertHistory=[]
 
-symbols.forEach(s=>history[s]=[])
+symbols.forEach(s=>{
+history[s]=Array(150).fill(100+Math.random()*10)
+})
 
-/* PRICE */
+/* PRICE API */
 
 async function getPrice(symbol){
 
 try{
 
-let r=await fetch(`https://curly-dream-6189.jetthetrader93.workers.dev/?symbol=${symbol}`)
+let r=await fetch(`https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=demo`)
 let d=await r.json()
 
-return Number(d.price)
+return Number(d[0].price)
 
-}catch{return null}
+}catch{
+
+return null
+
+}
 
 }
 
@@ -315,25 +280,37 @@ let k=2/(p+1)
 let e=data[0]
 
 for(let i=1;i<data.length;i++)
-e=data[i]*k + e*(1-k)
+e=data[i]*k+e*(1-k)
 
 return e
 
 }
 
-/* SIGNAL */
+/* SIGNAL ENGINE */
 
-function aiSignal(h){
-
-if(h.length<21) return "NEUTRAL"
+function signalEngine(h){
 
 let e9=ema(h.slice(-9),9)
 let e21=ema(h.slice(-21),21)
+let e120=ema(h.slice(-120),120)
 
-if(e9>e21) return "BUY"
-if(e9<e21) return "SELL"
+if(e9>e21 && e9>e120) return "BUY"
+if(e9<e21 && e9<e120) return "SELL"
 
 return "NEUTRAL"
+
+}
+
+/* ALERT */
+
+function triggerAlert(text){
+
+const div=document.createElement("div")
+
+div.className="alert"
+div.innerText=text
+
+document.getElementById("alerts").prepend(div)
 
 }
 
@@ -345,6 +322,7 @@ let prices=await Promise.all(symbols.map(getPrice))
 
 let rows=""
 let radar=""
+let buys=0
 
 symbols.forEach((s,i)=>{
 
@@ -352,9 +330,14 @@ let p=prices[i]
 
 if(p) history[s].push(p)
 
-let signal=aiSignal(history[s])
-
+let signal=signalEngine(history[s])
 let breakout=Math.floor(Math.random()*100)
+
+if(signal==="BUY"){
+buys++
+triggerAlert(`${s} BUY signal`)
+alertHistory.push(`${new Date().toLocaleTimeString()} ${s} BUY`)
+}
 
 if(breakout>85)
 radar+=`${s} breakout probability ${breakout}%<br>`
@@ -364,7 +347,6 @@ rows+=`
 <td class="symbol" onclick="loadChart('${s}')">${s}</td>
 <td>${p?p.toFixed(2):"-"}</td>
 <td class="${signal==="BUY"?"buy":"sell"}">${signal}</td>
-<td>${signal==="BUY"?"Bullish":"Bearish"}</td>
 <td>${breakout}%</td>
 </tr>
 `
@@ -372,7 +354,26 @@ rows+=`
 })
 
 document.getElementById("scanner").innerHTML=rows
-document.getElementById("aiSignals").innerHTML=radar
+document.getElementById("aiRadar").innerHTML=radar
+
+document.getElementById("strength").innerText=
+Math.round((buys/symbols.length)*100)
+
+renderAlertHistory()
+
+}
+
+/* ALERT HISTORY */
+
+function renderAlertHistory(){
+
+let html=""
+
+alertHistory.slice(-10).forEach(a=>{
+html+=`${a}<br>`
+})
+
+document.getElementById("alertHistory").innerHTML=html
 
 }
 
@@ -385,14 +386,12 @@ document.getElementById("chart").style.display="block"
 document.getElementById("chart").innerHTML=""
 
 new TradingView.widget({
-
 container_id:"chart",
 symbol:symbol,
 interval:"5",
 theme:"dark",
 width:"100%",
 height:500
-
 })
 
 loadNews(symbol)
@@ -403,13 +402,14 @@ loadNews(symbol)
 
 async function loadNews(symbol){
 
-let r=await fetch(`https://finnhub.io/api/v1/company-news?symbol=${symbol}&from=2024-01-01&to=2026-12-31&token=demo`)
+try{
 
+let r=await fetch(`https://financialmodelingprep.com/api/v3/stock_news?tickers=${symbol}&limit=5&apikey=demo`)
 let news=await r.json()
 
 let html=""
 
-news.slice(0,5).forEach(n=>{
+news.forEach(n=>{
 
 html+=`
 <div class="newsCard">
@@ -418,9 +418,11 @@ html+=`
 
 <div class="newsText">
 
-<b>${n.headline}</b>
+<b>${n.title}</b>
 
-<p>${n.summary}</p>
+<p>${n.text.slice(0,100)}...</p>
+
+<a href="${n.url}" target="_blank">Read</a>
 
 </div>
 
@@ -431,53 +433,11 @@ html+=`
 
 document.getElementById("news").innerHTML=html
 
-}
+}catch{
 
-/* FLOW */
-
-function generateFlow(){
-
-let types=["Sweep","Block","Split"]
-
-let html=""
-
-for(let i=0;i<6;i++){
-
-let s=symbols[Math.floor(Math.random()*symbols.length)]
-
-html+=`
-<tr>
-<td>${new Date().toLocaleTimeString()}</td>
-<td>${s}</td>
-<td>${types[Math.floor(Math.random()*3)]}</td>
-<td>${Math.floor(Math.random()*5000)}</td>
-<td>$${Math.floor(Math.random()*200000)}</td>
-</tr>
-`
+document.getElementById("news").innerHTML="No news found"
 
 }
-
-document.getElementById("flow").innerHTML=html
-
-}
-
-/* HEATMAP */
-
-function buildHeatmap(){
-
-let html=""
-
-symbols.slice(0,9).forEach(s=>{
-
-let move=Math.random()*4-2
-
-let color=move>0?"#0a3":"#a00"
-
-html+=`<div style="background:${color}">${s}<br>${move.toFixed(2)}%</div>`
-
-})
-
-document.getElementById("heatmap").innerHTML=html
 
 }
 
@@ -493,7 +453,8 @@ symbols.slice(0,5).forEach((s,i)=>{
 
 let p=prices[i]
 
-if(p) html+=`<span>${s} ${p.toFixed(2)}</span>`
+if(p)
+html+=`<span>${s} ${p.toFixed(2)}</span>`
 
 })
 
@@ -505,12 +466,9 @@ document.getElementById("ticker").innerHTML=html
 
 buildScanner()
 ticker()
-generateFlow()
-buildHeatmap()
 
 setInterval(buildScanner,5000)
 setInterval(ticker,5000)
-setInterval(generateFlow,4000)
 
 </script>
 
