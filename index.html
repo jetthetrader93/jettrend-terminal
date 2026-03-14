@@ -31,27 +31,18 @@ font-size:48px;
 color:#ffc400;
 }
 
-.hero button{
-background:#5a3df0;
-border:none;
-padding:14px 24px;
-border-radius:6px;
-color:white;
-cursor:pointer;
-}
-
 /* TERMINAL */
 
 .container{
 display:grid;
-grid-template-columns:70px 1fr 360px;
-grid-template-rows:60px 40px 80px auto 1fr;
+grid-template-columns:70px 1fr 380px;
+grid-template-rows:60px 40px 80px auto auto 1fr;
 height:100vh;
 }
 
 .sidebar{
 background:#111;
-grid-row:1/6;
+grid-row:1/7;
 text-align:center;
 padding-top:20px;
 }
@@ -73,14 +64,12 @@ background:#141414;
 display:flex;
 align-items:center;
 padding-left:20px;
-font-weight:bold;
 border-bottom:1px solid #222;
 }
 
 .ticker{
 grid-column:2/4;
 background:#0f0f0f;
-overflow:hidden;
 border-bottom:1px solid #222;
 }
 
@@ -101,26 +90,18 @@ background:#111;
 .gauge{
 flex:1;
 background:#151515;
-border-radius:6px;
 padding:15px;
+border-radius:6px;
 text-align:center;
 }
+
+/* SCANNER */
 
 .main{
 grid-column:2/3;
 padding:15px;
 overflow:auto;
 }
-
-.right{
-grid-column:3/4;
-background:#141414;
-border-left:1px solid #333;
-padding:15px;
-overflow:auto;
-}
-
-/* TABLE */
 
 table{
 width:100%;
@@ -152,9 +133,41 @@ color:#00ff9c;
 .sell{color:#ff4d4d;}
 
 #chart{
-margin-top:20px;
 height:500px;
 display:none;
+margin-top:20px;
+}
+
+/* RIGHT PANEL */
+
+.right{
+grid-column:3/4;
+background:#141414;
+border-left:1px solid #333;
+padding:15px;
+overflow:auto;
+}
+
+/* HEATMAP */
+
+.heatmap{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:5px;
+margin-bottom:20px;
+}
+
+.heatmap div{
+padding:20px;
+text-align:center;
+border-radius:4px;
+font-weight:bold;
+}
+
+/* FLOW TABLE */
+
+.flowTable td{
+font-size:12px;
 }
 
 /* NEWS */
@@ -166,21 +179,9 @@ margin-bottom:10px;
 overflow:hidden;
 }
 
-.newsHeader{
-display:flex;
-align-items:center;
-gap:10px;
-padding:10px;
-}
-
-.newsHeader img{
-width:26px;
-height:26px;
-}
-
-.newsCard img.cover{
+.newsCard img{
 width:100%;
-height:140px;
+height:120px;
 object-fit:cover;
 }
 
@@ -188,26 +189,13 @@ object-fit:cover;
 padding:10px;
 }
 
-.sentimentBull{color:#00ff9c;}
-.sentimentBear{color:#ff4d4d;}
-
 </style>
 
 </head>
 
 <body>
 
-<section class="hero">
-
-<h1>AI Trading <span>Terminal</span></h1>
-
-<p>Institutional flow detection and AI trade scanning.</p>
-
-<button onclick="launchTerminal()">Launch Terminal</button>
-
-</section>
-
-<div id="terminal" class="container">
+<div class="container">
 
 <div class="sidebar">
 
@@ -224,17 +212,13 @@ padding:10px;
 <div class="gauges">
 
 <div class="gauge">
-
 Trend Sentiment
 <h2 id="sentiment">Neutral</h2>
-
 </div>
 
 <div class="gauge">
-
 AI Strength
 <h2 id="strength">0</h2>
-
 </div>
 
 </div>
@@ -252,8 +236,6 @@ AI Strength
 <th>Signal</th>
 <th>Trend</th>
 <th>Breakout%</th>
-<th>Volume</th>
-<th>Activity</th>
 </tr>
 </thead>
 
@@ -263,15 +245,38 @@ AI Strength
 
 <div id="chart"></div>
 
-<h3>AI Opportunity Board</h3>
-
+<h3>AI Opportunity Radar</h3>
 <div id="aiSignals"></div>
+
+<h3>Institutional Flow</h3>
+
+<table class="flowTable">
+
+<thead>
+
+<tr>
+<th>Time</th>
+<th>Symbol</th>
+<th>Type</th>
+<th>Size</th>
+<th>Premium</th>
+</tr>
+
+</thead>
+
+<tbody id="flow"></tbody>
+
+</table>
 
 </div>
 
 <div class="right">
 
-<h3 id="newsTitle">Company News</h3>
+<h3>Market Heatmap</h3>
+
+<div class="heatmap" id="heatmap"></div>
+
+<h3>Company News</h3>
 
 <div id="news"></div>
 
@@ -281,26 +286,13 @@ AI Strength
 
 <script>
 
-function launchTerminal(){
-document.getElementById("terminal").scrollIntoView({behavior:"smooth"})
-}
-
-/* SYMBOLS */
-
-let symbols=[
-"AAPL","NVDA","TSLA","AMD","META",
-"MSFT","GOOGL","AMZN","NFLX","SPY","QQQ"
-]
+let symbols=["AAPL","NVDA","TSLA","AMD","META","MSFT","GOOGL","AMZN","SPY"]
 
 let history={}
-let volumeHistory={}
 
-symbols.forEach(s=>{
-history[s]=[]
-volumeHistory[s]=[]
-})
+symbols.forEach(s=>history[s]=[])
 
-/* PRICE API */
+/* PRICE */
 
 async function getPrice(symbol){
 
@@ -311,11 +303,7 @@ let d=await r.json()
 
 return Number(d.price)
 
-}catch{
-
-return null
-
-}
+}catch{return null}
 
 }
 
@@ -330,23 +318,6 @@ for(let i=1;i<data.length;i++)
 e=data[i]*k + e*(1-k)
 
 return e
-
-}
-
-/* TREND */
-
-function trendSentiment(h){
-
-if(h.length<120) return "Building"
-
-let e9=ema(h.slice(-9),9)
-let e21=ema(h.slice(-21),21)
-let e120=ema(h.slice(-120),120)
-
-if(e9>e120 && e21>e120) return "Bullish"
-if(e9<e120 && e21<e120) return "Bearish"
-
-return "Sideways"
 
 }
 
@@ -366,50 +337,6 @@ return "NEUTRAL"
 
 }
 
-/* BREAKOUT */
-
-function breakoutProbability(h){
-
-if(h.length<20) return 0
-
-let high=Math.max(...h.slice(-20))
-let price=h[h.length-1]
-
-if(price>=high) return 90+Math.floor(Math.random()*10)
-
-return Math.floor(Math.random()*60)
-
-}
-
-/* VOLUME */
-
-function volumeSpike(v){
-
-if(v.length<20) return "Normal"
-
-let avg=v.slice(-20).reduce((a,b)=>a+b)/20
-
-if(v[v.length-1]>avg*3) return "Spike"
-
-return "Normal"
-
-}
-
-/* ACTIVITY */
-
-function institutional(h,v){
-
-let spike=volumeSpike(v)
-let breakout=breakoutProbability(h)
-
-if(spike==="Spike" && breakout>85) return "Institutional"
-
-if(spike==="Spike") return "Unusual"
-
-return "Normal"
-
-}
-
 /* SCANNER */
 
 async function buildScanner(){
@@ -417,50 +344,35 @@ async function buildScanner(){
 let prices=await Promise.all(symbols.map(getPrice))
 
 let rows=""
-let aiBoard=""
-let buys=0
+let radar=""
 
 symbols.forEach((s,i)=>{
 
 let p=prices[i]
 
-if(p){
-
-history[s].push(p)
-volumeHistory[s].push(1000+Math.random()*2000)
-
-}
+if(p) history[s].push(p)
 
 let signal=aiSignal(history[s])
-let trend=trendSentiment(history[s])
-let breakout=breakoutProbability(history[s])
-let vol=volumeSpike(volumeHistory[s])
-let act=institutional(history[s],volumeHistory[s])
 
-if(signal==="BUY") buys++
+let breakout=Math.floor(Math.random()*100)
 
 if(breakout>85)
-aiBoard+=`${s} breakout probability ${breakout}%<br>`
+radar+=`${s} breakout probability ${breakout}%<br>`
 
 rows+=`
 <tr>
 <td class="symbol" onclick="loadChart('${s}')">${s}</td>
 <td>${p?p.toFixed(2):"-"}</td>
 <td class="${signal==="BUY"?"buy":"sell"}">${signal}</td>
-<td>${trend}</td>
+<td>${signal==="BUY"?"Bullish":"Bearish"}</td>
 <td>${breakout}%</td>
-<td>${vol}</td>
-<td>${act}</td>
 </tr>
 `
 
 })
 
 document.getElementById("scanner").innerHTML=rows
-document.getElementById("aiSignals").innerHTML=aiBoard
-
-document.getElementById("strength").innerText=
-Math.round((buys/symbols.length)*100)
+document.getElementById("aiSignals").innerHTML=radar
 
 }
 
@@ -473,39 +385,23 @@ document.getElementById("chart").style.display="block"
 document.getElementById("chart").innerHTML=""
 
 new TradingView.widget({
+
 container_id:"chart",
 symbol:symbol,
 interval:"5",
 theme:"dark",
 width:"100%",
 height:500
+
 })
 
-loadTickerNews(symbol)
+loadNews(symbol)
 
 }
 
-/* NEWS SENTIMENT */
+/* NEWS */
 
-function sentimentScore(text){
-
-text=text.toLowerCase()
-
-if(text.includes("upgrade") || text.includes("surge") || text.includes("growth"))
-return "Bullish"
-
-if(text.includes("lawsuit") || text.includes("drop") || text.includes("cut"))
-return "Bearish"
-
-return "Neutral"
-
-}
-
-/* TICKER NEWS */
-
-async function loadTickerNews(symbol){
-
-document.getElementById("newsTitle").innerText=symbol+" News"
+async function loadNews(symbol){
 
 let r=await fetch(`https://finnhub.io/api/v1/company-news?symbol=${symbol}&from=2024-01-01&to=2026-12-31&token=demo`)
 
@@ -513,32 +409,18 @@ let news=await r.json()
 
 let html=""
 
-news.slice(0,6).forEach(n=>{
-
-let sentiment=sentimentScore(n.headline)
+news.slice(0,5).forEach(n=>{
 
 html+=`
 <div class="newsCard">
 
-<img class="cover" src="${n.image}">
-
-<div class="newsHeader">
-
-<img src="https://logo.clearbit.com/${symbol}.com">
-
-<b>${symbol}</b>
-
-<span class="${sentiment==="Bullish"?"sentimentBull":"sentimentBear"}">${sentiment}</span>
-
-</div>
+<img src="${n.image}">
 
 <div class="newsText">
 
-<h4>${n.headline}</h4>
+<b>${n.headline}</b>
 
 <p>${n.summary}</p>
-
-<a href="${n.url}" target="_blank">Read</a>
 
 </div>
 
@@ -551,15 +433,63 @@ document.getElementById("news").innerHTML=html
 
 }
 
+/* FLOW */
+
+function generateFlow(){
+
+let types=["Sweep","Block","Split"]
+
+let html=""
+
+for(let i=0;i<6;i++){
+
+let s=symbols[Math.floor(Math.random()*symbols.length)]
+
+html+=`
+<tr>
+<td>${new Date().toLocaleTimeString()}</td>
+<td>${s}</td>
+<td>${types[Math.floor(Math.random()*3)]}</td>
+<td>${Math.floor(Math.random()*5000)}</td>
+<td>$${Math.floor(Math.random()*200000)}</td>
+</tr>
+`
+
+}
+
+document.getElementById("flow").innerHTML=html
+
+}
+
+/* HEATMAP */
+
+function buildHeatmap(){
+
+let html=""
+
+symbols.slice(0,9).forEach(s=>{
+
+let move=Math.random()*4-2
+
+let color=move>0?"#0a3":"#a00"
+
+html+=`<div style="background:${color}">${s}<br>${move.toFixed(2)}%</div>`
+
+})
+
+document.getElementById("heatmap").innerHTML=html
+
+}
+
 /* TICKER */
 
 async function ticker(){
 
-let prices=await Promise.all(symbols.slice(0,6).map(getPrice))
+let prices=await Promise.all(symbols.slice(0,5).map(getPrice))
 
 let html=""
 
-symbols.slice(0,6).forEach((s,i)=>{
+symbols.slice(0,5).forEach((s,i)=>{
 
 let p=prices[i]
 
@@ -575,9 +505,12 @@ document.getElementById("ticker").innerHTML=html
 
 buildScanner()
 ticker()
+generateFlow()
+buildHeatmap()
 
-setInterval(buildScanner,4000)
-setInterval(ticker,4000)
+setInterval(buildScanner,5000)
+setInterval(ticker,5000)
+setInterval(generateFlow,4000)
 
 </script>
 
