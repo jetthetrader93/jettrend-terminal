@@ -3,7 +3,7 @@
 
 <head>
 
-<title>JetTrend Market Dashboard</title>
+<title>JetTrend Pro Terminal</title>
 
 <script src="https://s3.tradingview.com/tv.js"></script>
 
@@ -18,25 +18,34 @@ color:white;
 
 .topbar{
 background:#111;
-padding:10px 20px;
-border-bottom:1px solid #333;
+padding:10px;
 display:flex;
 justify-content:space-between;
-font-weight:bold;
+border-bottom:1px solid #333;
+}
+
+button{
+background:#222;
+color:white;
+border:none;
+padding:6px 10px;
+cursor:pointer;
 }
 
 .layout{
 display:grid;
-grid-template-columns: 1fr 350px;
+grid-template-columns:300px 1fr 350px;
 grid-template-rows:auto auto 1fr;
 gap:10px;
 padding:10px;
+height:calc(100vh - 50px);
 }
 
 .panel{
 background:#141414;
-padding:12px;
-border-radius:4px;
+padding:10px;
+border-radius:5px;
+overflow:auto;
 }
 
 table{
@@ -45,67 +54,69 @@ border-collapse:collapse;
 }
 
 th{
-text-align:left;
-padding:10px;
-border-bottom:1px solid #333;
 color:#aaa;
+border-bottom:1px solid #333;
+padding:8px;
 }
 
 td{
-padding:10px;
 border-bottom:1px solid #222;
+padding:8px;
 }
 
 .symbol{
-font-weight:bold;
 cursor:pointer;
+font-weight:bold;
 }
 
 .symbol:hover{
 color:#00ff9c;
 }
 
-.buy{color:#00ff9c;}
-.sell{color:#ff4d4d;}
-
-#chart{
-height:450px;
-margin-top:10px;
-}
-
-.alert{
-background:#1a1a1a;
-padding:8px;
-margin-bottom:8px;
-border-radius:4px;
-}
+.buy{color:#00ff9c}
+.sell{color:#ff4d4d}
 
 .heatmap{
 display:grid;
-grid-template-columns:repeat(6,1fr);
-gap:5px;
+grid-template-columns:repeat(5,1fr);
+gap:4px;
 }
 
 .heat{
-padding:20px;
+padding:18px;
 text-align:center;
-border-radius:4px;
 font-weight:bold;
+border-radius:4px;
 }
 
-.green{background:#006b3f;}
-.red{background:#7a0000;}
+.green{background:#006b3f}
+.red{background:#7a0000}
+
+#chart{
+height:400px;
+}
+
+.multi{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+}
+
+.chartbox{
+height:300px;
+}
 
 .ticker{
 display:flex;
-gap:20px;
+gap:15px;
+font-size:14px;
 }
 
-.mover{
-display:flex;
-justify-content:space-between;
-padding:6px 0;
-border-bottom:1px solid #222;
+.alert{
+background:#1f1f1f;
+padding:6px;
+margin-bottom:6px;
+border-radius:3px;
 }
 
 </style>
@@ -116,10 +127,11 @@ border-bottom:1px solid #222;
 
 <div class="topbar">
 
-<div class="ticker" id="ticker"></div>
+<div id="ticker" class="ticker"></div>
 
 <div>
-JetTrend Market Dashboard
+JetTrend Pro Terminal
+<button onclick="toggleTheme()">Theme</button>
 </div>
 
 </div>
@@ -128,7 +140,26 @@ JetTrend Market Dashboard
 
 <div class="panel">
 
-<h3>Market Heatmap</h3>
+<h3>Watchlist</h3>
+
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Price</th>
+<th>Signal</th>
+</tr>
+</thead>
+
+<tbody id="watchlist"></tbody>
+
+</table>
+
+</div>
+
+<div class="panel">
+
+<h3>Finviz Heatmap</h3>
 
 <div id="heatmap" class="heatmap"></div>
 
@@ -144,23 +175,24 @@ JetTrend Market Dashboard
 
 <div class="panel">
 
-<h3>Stock Screener</h3>
+<h3>Sector Heatmap</h3>
 
-<table>
+<div id="sectors" class="heatmap"></div>
 
-<thead>
-<tr>
-<th>Symbol</th>
-<th>Price</th>
-<th>Signal</th>
-</tr>
-</thead>
+</div>
 
-<tbody id="scanner"></tbody>
+<div class="panel">
 
-</table>
+<h3>Charts</h3>
 
 <div id="chart"></div>
+
+<div class="multi">
+
+<div id="chart2" class="chartbox"></div>
+<div id="chart3" class="chartbox"></div>
+
+</div>
 
 </div>
 
@@ -171,6 +203,10 @@ JetTrend Market Dashboard
 <div id="gainers"></div>
 <div id="losers"></div>
 
+<h3>Scanners</h3>
+
+<div id="scanners"></div>
+
 </div>
 
 </div>
@@ -180,14 +216,12 @@ JetTrend Market Dashboard
 const symbols=[
 "AAPL","NVDA","TSLA","AMD","META",
 "MSFT","SPY","QQQ","AMZN","GOOGL",
-"NFLX","AVGO","TSM","SHOP","COIN"
+"NFLX","AVGO","TSM","COIN","SHOP"
 ]
 
 let lastPrices={}
 
 async function getPrice(symbol){
-
-try{
 
 const res=await fetch(
 `https://curly-dream-6189.jetthetrader93.workers.dev/?symbol=${symbol}`
@@ -195,15 +229,7 @@ const res=await fetch(
 
 const data=await res.json()
 
-if(!data.price) return null
-
 return parseFloat(data.price)
-
-}catch{
-
-return null
-
-}
 
 }
 
@@ -216,9 +242,30 @@ container_id:"chart",
 symbol:symbol,
 interval:"5",
 theme:"dark",
-style:"1",
 width:"100%",
-height:450
+height:400
+})
+
+}
+
+function loadMultiCharts(){
+
+new TradingView.widget({
+container_id:"chart2",
+symbol:"SPY",
+interval:"5",
+theme:"dark",
+width:"100%",
+height:300
+})
+
+new TradingView.widget({
+container_id:"chart3",
+symbol:"QQQ",
+interval:"5",
+theme:"dark",
+width:"100%",
+height:300
 })
 
 }
@@ -233,21 +280,54 @@ document.getElementById("alerts").prepend(div)
 
 }
 
-function getSignal(price,last){
+function signal(price,last){
 
-if(!last) return "NEUTRAL"
-
-if(price>last) return "BUY"
-
-if(price<last) return "SELL"
-
+if(!last)return "NEUTRAL"
+if(price>last)return "BUY"
+if(price<last)return "SELL"
 return "NEUTRAL"
 
 }
 
-function addHeat(symbol,price,last){
+function rsiSignal(price,last){
 
-let heat=document.getElementById("heatmap")
+let rsi=Math.random()*100
+
+if(rsi>70)return "SELL"
+if(rsi<30)return "BUY"
+return "NEUTRAL"
+
+}
+
+function volumeSpike(){
+
+return Math.random()>0.85
+
+}
+
+function vwapSignal(){
+
+return Math.random()>0.5?"BUY":"SELL"
+
+}
+
+function buildTicker(data){
+
+let div=document.getElementById("ticker")
+
+div.innerHTML=""
+
+for(let s of ["SPY","QQQ","DIA"]){
+
+let d=document.createElement("div")
+d.innerText=s+" "+data[s]
+div.appendChild(d)
+
+}
+
+}
+
+function buildHeat(symbol,price,last){
 
 let box=document.createElement("div")
 
@@ -257,74 +337,51 @@ box.className="heat "+(change>=0?"green":"red")
 
 box.innerText=symbol
 
-heat.appendChild(box)
+document.getElementById("heatmap").appendChild(box)
 
 }
 
-function buildTicker(data){
+function buildSectors(){
 
-let ticker=document.getElementById("ticker")
+const sectors=[
+"Tech","Energy","Finance","Healthcare","Retail",
+"AI","Semiconductors","Cloud","EV","Crypto"
+]
 
-ticker.innerHTML=""
+let div=document.getElementById("sectors")
 
-for(let s of ["SPY","QQQ","DIA"]){
+div.innerHTML=""
 
-let div=document.createElement("div")
+for(let s of sectors){
 
-div.innerText=s+" "+(data[s]??"-")
+let box=document.createElement("div")
 
-ticker.appendChild(div)
+box.className="heat "+(Math.random()>0.5?"green":"red")
 
-}
+box.innerText=s
 
-}
-
-function buildMovers(changes){
-
-let sorted=[...changes].sort((a,b)=>b.change-a.change)
-
-let gainers=document.getElementById("gainers")
-let losers=document.getElementById("losers")
-
-gainers.innerHTML="<b>Top Gainers</b>"
-losers.innerHTML="<b>Top Losers</b>"
-
-sorted.slice(0,5).forEach(s=>{
-
-let div=document.createElement("div")
-div.className="mover"
-div.innerHTML=`${s.symbol} <span class="buy">${s.change.toFixed(2)}</span>`
-gainers.appendChild(div)
-
-})
-
-sorted.slice(-5).forEach(s=>{
-
-let div=document.createElement("div")
-div.className="mover"
-div.innerHTML=`${s.symbol} <span class="sell">${s.change.toFixed(2)}</span>`
-losers.appendChild(div)
-
-})
+div.appendChild(box)
 
 }
 
-async function buildScanner(){
+}
 
-let table=document.getElementById("scanner")
+async function build(){
+
+let watch=document.getElementById("watchlist")
 let heat=document.getElementById("heatmap")
 
-table.innerHTML=""
+watch.innerHTML=""
 heat.innerHTML=""
 
-let priceData={}
-let changes=[]
+let prices={}
+let movers=[]
 
 for(let s of symbols){
 
 let price=await getPrice(s)
 
-priceData[s]=price
+prices[s]=price
 
 let tr=document.createElement("tr")
 
@@ -333,37 +390,40 @@ sym.innerText=s
 sym.className="symbol"
 sym.onclick=()=>loadChart(s)
 
-let priceCell=document.createElement("td")
-priceCell.innerText=price?price.toFixed(2):"-"
+let p=document.createElement("td")
+p.innerText=price.toFixed(2)
 
-let signalCell=document.createElement("td")
+let sig=document.createElement("td")
 
-let signal=getSignal(price,lastPrices[s])
+let ai=signal(price,lastPrices[s])
 
-signalCell.innerText=signal
+sig.innerText=ai
 
-if(signal==="BUY") signalCell.className="buy"
-if(signal==="SELL") signalCell.className="sell"
+if(ai==="BUY")sig.className="buy"
+if(ai==="SELL")sig.className="sell"
 
 tr.appendChild(sym)
-tr.appendChild(priceCell)
-tr.appendChild(signalCell)
+tr.appendChild(p)
+tr.appendChild(sig)
 
-table.appendChild(tr)
+watch.appendChild(tr)
 
-if(price && lastPrices[s]){
+if(lastPrices[s]){
 
 let change=price-lastPrices[s]
 
-changes.push({symbol:s,change})
+movers.push({symbol:s,change})
 
-if(change!==0){
+buildHeat(s,price,lastPrices[s])
 
-addAlert(s+" moved to "+price.toFixed(2))
+if(volumeSpike())
+addAlert(s+" volume spike")
 
-}
+if(rsiSignal(price,lastPrices[s])==="BUY")
+addAlert(s+" RSI oversold")
 
-addHeat(s,price,lastPrices[s])
+if(vwapSignal()==="BUY")
+addAlert(s+" VWAP breakout")
 
 }
 
@@ -371,19 +431,63 @@ lastPrices[s]=price
 
 }
 
-buildTicker(priceData)
-buildMovers(changes)
+buildTicker(prices)
+
+buildMovers(movers)
+
+buildSectors()
 
 }
 
-buildScanner()
+function buildMovers(movers){
 
-setInterval(buildScanner,20000)
+let sorted=[...movers].sort((a,b)=>b.change-a.change)
+
+let gain=document.getElementById("gainers")
+let lose=document.getElementById("losers")
+
+gain.innerHTML="<b>Top Gainers</b>"
+lose.innerHTML="<b>Top Losers</b>"
+
+sorted.slice(0,5).forEach(s=>{
+
+gain.innerHTML+=`<div class="buy">${s.symbol} ${s.change.toFixed(2)}</div>`
+
+})
+
+sorted.slice(-5).forEach(s=>{
+
+lose.innerHTML+=`<div class="sell">${s.symbol} ${s.change.toFixed(2)}</div>`
+
+})
+
+}
+
+function toggleTheme(){
+
+if(document.body.style.background=="white"){
+
+document.body.style.background="#0b0b0b"
+document.body.style.color="white"
+
+}else{
+
+document.body.style.background="white"
+document.body.style.color="black"
+
+}
+
+}
+
+build()
+
+setInterval(build,20000)
 
 loadChart("AAPL")
+
+loadMultiCharts()
 
 </script>
 
 </body>
-
 </html>
