@@ -32,7 +32,6 @@ max-width:500px;
 
 .hero-left h1{
 font-size:48px;
-margin-bottom:20px;
 }
 
 .hero-left span{
@@ -49,8 +48,8 @@ cursor:pointer;
 }
 
 .hero-right{
-width:650px;
-height:360px;
+width:600px;
+height:340px;
 background:#111;
 border-radius:10px;
 display:flex;
@@ -64,13 +63,15 @@ box-shadow:0 0 40px rgba(0,0,0,.7);
 .container{
 display:grid;
 grid-template-columns:70px 1fr 320px;
-grid-template-rows:60px 40px 1fr;
+grid-template-rows:60px 40px auto auto 1fr;
 height:100vh;
 }
 
+/* SIDEBAR */
+
 .sidebar{
 background:#111;
-grid-row:1/4;
+grid-row:1/6;
 text-align:center;
 padding-top:20px;
 }
@@ -86,15 +87,19 @@ opacity:1;
 color:#00ff9c;
 }
 
+/* HEADER */
+
 .topbar{
 grid-column:2/4;
 background:#141414;
 display:flex;
 align-items:center;
 padding-left:20px;
-border-bottom:1px solid #222;
 font-weight:bold;
+border-bottom:1px solid #222;
 }
+
+/* TICKER */
 
 .ticker{
 grid-column:2/4;
@@ -109,10 +114,41 @@ display:inline-block;
 color:#00ff9c;
 }
 
+/* GAUGES */
+
+.gauges{
+grid-column:2/4;
+display:flex;
+gap:20px;
+padding:15px;
+background:#111;
+}
+
+.gauge{
+background:#151515;
+padding:20px;
+border-radius:6px;
+flex:1;
+text-align:center;
+}
+
+.gauge h2{
+margin:0;
+font-size:26px;
+}
+
+.bull{color:#00ff9c;}
+.bear{color:#ff4d4d;}
+
+/* MAIN */
+
 .main{
+grid-column:2/3;
 padding:15px;
 overflow:auto;
 }
+
+/* FLOW TABLE */
 
 table{
 width:100%;
@@ -143,7 +179,10 @@ color:#00ff9c;
 .buy{color:#00ff9c;}
 .sell{color:#ff4d4d;}
 
+/* RIGHT PANEL */
+
 .right{
+grid-column:3/4;
 background:#141414;
 border-left:1px solid #333;
 padding:15px;
@@ -180,6 +219,8 @@ font-size:12px;
 color:#aaa;
 }
 
+/* CHART */
+
 #chart{
 margin-top:20px;
 height:500px;
@@ -198,9 +239,9 @@ height:500px;
 <h1>Intelligent <span>order tracking</span></h1>
 
 <p>
-JetTrend AI Terminal analyzes sentiment, momentum,
-and institutional activity to detect high probability
-trading opportunities.
+JetTrend AI Terminal detects momentum,
+sentiment, and institutional activity
+to surface high probability trades.
 </p>
 
 <button onclick="openTerminal()">Launch Terminal</button>
@@ -227,9 +268,28 @@ JetTrend AI Terminal
 
 <div class="ticker" id="ticker"></div>
 
+<div class="gauges">
+
+<div class="gauge">
+Market Sentiment
+<h2 id="sentiment">Neutral</h2>
+</div>
+
+<div class="gauge">
+AI Signal Strength
+<h2 id="strength">0</h2>
+</div>
+
+<div class="gauge">
+Momentum Ratio
+<h2 id="momentum">0</h2>
+</div>
+
+</div>
+
 <div class="main">
 
-<h3>Market Scanner</h3>
+<h3>Institutional Flow Scanner</h3>
 
 <table>
 
@@ -237,17 +297,14 @@ JetTrend AI Terminal
 <tr>
 <th>Symbol</th>
 <th>Price</th>
-<th>Signal</th>
+<th>AI Signal</th>
 <th>Trend</th>
-<th>Probability</th>
 <th>Flow</th>
 </tr>
 </thead>
 
 <tbody id="scanner">
-<tr>
-<td colspan="6">Loading market data...</td>
-</tr>
+<tr><td colspan="5">Loading scanner...</td></tr>
 </tbody>
 
 </table>
@@ -255,10 +312,6 @@ JetTrend AI Terminal
 <div id="chart"></div>
 
 <h3>Market News</h3>
-
-<input id="newsSearch" placeholder="Search news">
-<button onclick="searchNews()">Search</button>
-
 <div id="news"></div>
 
 </div>
@@ -280,29 +333,21 @@ JetTrend AI Terminal
 
 <script>
 
-/* SCROLL */
-
 function openTerminal(){
 document.getElementById("terminal")
 .scrollIntoView({behavior:"smooth"})
 }
 
-/* SYMBOLS */
-
 let symbols=[
 "AAPL","NVDA","TSLA","AMD","META","MSFT",
-"GOOGL","AMZN","NFLX","SPY","QQQ","IWM"
+"GOOGL","AMZN","NFLX","SPY","QQQ"
 ]
-
-/* PRELOAD HISTORY */
 
 let history={}
 
 symbols.forEach(s=>{
 history[s]=Array(25).fill(100+Math.random()*10)
 })
-
-/* API */
 
 async function getPrice(symbol){
 
@@ -314,14 +359,10 @@ let d=await r.json()
 return Number(d.price)
 
 }catch{
-
 return null
-
 }
 
 }
-
-/* EMA */
 
 function ema(data,p){
 
@@ -335,21 +376,17 @@ return e
 
 }
 
-/* SIGNAL */
-
 function aiSignal(h){
 
 let e9=ema(h.slice(-9),9)
 let e21=ema(h.slice(-21),21)
 
-if(e9>e21)return["BUY","80%"]
-if(e9<e21)return["SELL","75%"]
+if(e9>e21)return"BUY"
+if(e9<e21)return"SELL"
 
-return["NEUTRAL","50%"]
+return"NEUTRAL"
 
 }
-
-/* SCANNER */
 
 async function buildScanner(){
 
@@ -363,7 +400,7 @@ let p=prices[i]
 
 if(p) history[s].push(p)
 
-let [signal,prob]=aiSignal(history[s])
+let signal=aiSignal(history[s])
 
 let trend=Math.abs(
 ema(history[s].slice(-9),9)-ema(history[s].slice(-21),21)
@@ -379,7 +416,6 @@ rows+=`
 <td>${p?p.toFixed(2):"-"}</td>
 <td class="${signal==='BUY'?'buy':'sell'}">${signal}</td>
 <td>${trend}</td>
-<td>${prob}</td>
 <td>${flow}</td>
 </tr>
 `
@@ -389,8 +425,6 @@ rows+=`
 document.getElementById("scanner").innerHTML=rows
 
 }
-
-/* CHART */
 
 function loadChart(symbol){
 
@@ -406,8 +440,6 @@ height:500
 })
 
 }
-
-/* TICKER */
 
 async function ticker(){
 
@@ -426,8 +458,6 @@ if(p) html+=`<span>${s} ${p.toFixed(2)}</span>`
 document.getElementById("ticker").innerHTML=html
 
 }
-
-/* NEWS */
 
 async function loadNews(){
 
@@ -449,13 +479,11 @@ html+=`
 <div class="newsText">
 
 <h4>${n.headline}</h4>
-
 <p>${n.summary}</p>
 
 <a href="${n.url}" target="_blank">Read</a>
 
 </div>
-
 </div>
 `
 
@@ -464,48 +492,6 @@ html+=`
 document.getElementById("news").innerHTML=html
 
 }
-
-/* NEWS SEARCH */
-
-async function searchNews(){
-
-let q=document.getElementById("newsSearch").value
-
-let r=await fetch(
-`https://newsapi.org/v2/everything?q=${q}&apiKey=demo`
-)
-
-let d=await r.json()
-
-let html=""
-
-d.articles.slice(0,8).forEach(a=>{
-
-html+=`
-<div class="newsCard">
-
-<img src="${a.urlToImage}">
-
-<div class="newsText">
-
-<h4>${a.title}</h4>
-
-<p>${a.description}</p>
-
-<a href="${a.url}" target="_blank">Read</a>
-
-</div>
-
-</div>
-`
-
-})
-
-document.getElementById("news").innerHTML=html
-
-}
-
-/* INIT */
 
 buildScanner()
 ticker()
