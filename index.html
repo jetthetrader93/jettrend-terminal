@@ -11,42 +11,62 @@
 
 body{
 margin:0;
-font-family:Arial;
-background:#0b0b0b;
+font-family:Segoe UI,Arial;
+background:#0a0a0a;
 color:white;
 }
+
+/* TOP BAR */
 
 .topbar{
 background:#111;
-padding:10px;
+padding:12px 20px;
 display:flex;
 justify-content:space-between;
-border-bottom:1px solid #333;
+align-items:center;
+border-bottom:1px solid #222;
+font-size:15px;
 }
 
-button{
-background:#222;
-color:white;
-border:none;
-padding:6px 10px;
-cursor:pointer;
+.logo{
+font-weight:600;
+letter-spacing:1px;
 }
+
+.ticker{
+display:flex;
+gap:20px;
+color:#aaa;
+}
+
+/* MAIN LAYOUT */
 
 .layout{
 display:grid;
-grid-template-columns:300px 1fr 350px;
-grid-template-rows:auto auto 1fr;
-gap:10px;
-padding:10px;
+grid-template-columns:260px 1fr 320px;
+gap:12px;
+padding:12px;
 height:calc(100vh - 50px);
 }
 
+/* PANELS */
+
 .panel{
 background:#141414;
-padding:10px;
-border-radius:5px;
+border-radius:6px;
+padding:12px;
 overflow:auto;
+border:1px solid #1f1f1f;
 }
+
+.panel h3{
+margin-top:0;
+font-weight:500;
+font-size:16px;
+color:#ccc;
+}
+
+/* TABLE */
 
 table{
 width:100%;
@@ -54,19 +74,20 @@ border-collapse:collapse;
 }
 
 th{
-color:#aaa;
-border-bottom:1px solid #333;
+text-align:left;
+color:#888;
 padding:8px;
+border-bottom:1px solid #222;
 }
 
 td{
-border-bottom:1px solid #222;
 padding:8px;
+border-bottom:1px solid #1a1a1a;
 }
 
 .symbol{
+font-weight:600;
 cursor:pointer;
-font-weight:bold;
 }
 
 .symbol:hover{
@@ -76,47 +97,39 @@ color:#00ff9c;
 .buy{color:#00ff9c}
 .sell{color:#ff4d4d}
 
+/* HEATMAP */
+
 .heatmap{
 display:grid;
-grid-template-columns:repeat(5,1fr);
-gap:4px;
+grid-template-columns:repeat(3,1fr);
+gap:6px;
 }
 
 .heat{
 padding:18px;
 text-align:center;
-font-weight:bold;
 border-radius:4px;
+font-weight:600;
+font-size:13px;
 }
 
 .green{background:#006b3f}
 .red{background:#7a0000}
 
-#chart{
-height:400px;
-}
-
-.multi{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:10px;
-}
-
-.chartbox{
-height:300px;
-}
-
-.ticker{
-display:flex;
-gap:15px;
-font-size:14px;
-}
+/* ALERTS */
 
 .alert{
-background:#1f1f1f;
+background:#1e1e1e;
 padding:6px;
 margin-bottom:6px;
 border-radius:3px;
+font-size:13px;
+}
+
+/* CHART */
+
+#chart{
+height:420px;
 }
 
 </style>
@@ -127,22 +140,22 @@ border-radius:3px;
 
 <div class="topbar">
 
-<div id="ticker" class="ticker"></div>
+<div class="logo">JetTrend Pro Terminal</div>
 
-<div>
-JetTrend Pro Terminal
-<button onclick="toggleTheme()">Theme</button>
-</div>
+<div id="ticker" class="ticker"></div>
 
 </div>
 
 <div class="layout">
 
+<!-- WATCHLIST / SCREENER -->
+
 <div class="panel">
 
-<h3>Watchlist</h3>
+<h3>Stock Screener</h3>
 
 <table>
+
 <thead>
 <tr>
 <th>Symbol</th>
@@ -157,13 +170,17 @@ JetTrend Pro Terminal
 
 </div>
 
+<!-- HEATMAP -->
+
 <div class="panel">
 
-<h3>Finviz Heatmap</h3>
+<h3>Market Heatmap</h3>
 
 <div id="heatmap" class="heatmap"></div>
 
 </div>
+
+<!-- ALERTS -->
 
 <div class="panel">
 
@@ -173,39 +190,13 @@ JetTrend Pro Terminal
 
 </div>
 
-<div class="panel">
+<!-- CHART -->
 
-<h3>Sector Heatmap</h3>
+<div class="panel" style="grid-column:2/4">
 
-<div id="sectors" class="heatmap"></div>
-
-</div>
-
-<div class="panel">
-
-<h3>Charts</h3>
+<h3>Chart</h3>
 
 <div id="chart"></div>
-
-<div class="multi">
-
-<div id="chart2" class="chartbox"></div>
-<div id="chart3" class="chartbox"></div>
-
-</div>
-
-</div>
-
-<div class="panel">
-
-<h3>Top Movers</h3>
-
-<div id="gainers"></div>
-<div id="losers"></div>
-
-<h3>Scanners</h3>
-
-<div id="scanners"></div>
 
 </div>
 
@@ -213,15 +204,29 @@ JetTrend Pro Terminal
 
 <script>
 
-const symbols=[
-"AAPL","NVDA","TSLA","AMD","META",
-"MSFT","SPY","QQQ","AMZN","GOOGL",
-"NFLX","AVGO","TSM","COIN","SHOP"
+/* ONLY 5 SCREENER STOCKS */
+
+const screenerStocks=[
+"AAPL",
+"NVDA",
+"TSLA",
+"AMD",
+"META"
+]
+
+/* HEATMAP STOCKS */
+
+const heatmapStocks=[
+"AAPL","NVDA","MSFT",
+"META","AMD","TSLA",
+"GOOGL","AMZN","SPY"
 ]
 
 let lastPrices={}
 
 async function getPrice(symbol){
+
+try{
 
 const res=await fetch(
 `https://curly-dream-6189.jetthetrader93.workers.dev/?symbol=${symbol}`
@@ -230,6 +235,12 @@ const res=await fetch(
 const data=await res.json()
 
 return parseFloat(data.price)
+
+}catch{
+
+return null
+
+}
 
 }
 
@@ -242,30 +253,9 @@ container_id:"chart",
 symbol:symbol,
 interval:"5",
 theme:"dark",
+style:"1",
 width:"100%",
-height:400
-})
-
-}
-
-function loadMultiCharts(){
-
-new TradingView.widget({
-container_id:"chart2",
-symbol:"SPY",
-interval:"5",
-theme:"dark",
-width:"100%",
-height:300
-})
-
-new TradingView.widget({
-container_id:"chart3",
-symbol:"QQQ",
-interval:"5",
-theme:"dark",
-width:"100%",
-height:300
+height:420
 })
 
 }
@@ -289,39 +279,19 @@ return "NEUTRAL"
 
 }
 
-function rsiSignal(price,last){
-
-let rsi=Math.random()*100
-
-if(rsi>70)return "SELL"
-if(rsi<30)return "BUY"
-return "NEUTRAL"
-
-}
-
-function volumeSpike(){
-
-return Math.random()>0.85
-
-}
-
-function vwapSignal(){
-
-return Math.random()>0.5?"BUY":"SELL"
-
-}
-
 function buildTicker(data){
 
-let div=document.getElementById("ticker")
+let ticker=document.getElementById("ticker")
 
-div.innerHTML=""
+ticker.innerHTML=""
 
 for(let s of ["SPY","QQQ","DIA"]){
 
-let d=document.createElement("div")
-d.innerText=s+" "+data[s]
-div.appendChild(d)
+let div=document.createElement("div")
+
+div.innerText=s+" "+(data[s]??"-")
+
+ticker.appendChild(div)
 
 }
 
@@ -341,31 +311,6 @@ document.getElementById("heatmap").appendChild(box)
 
 }
 
-function buildSectors(){
-
-const sectors=[
-"Tech","Energy","Finance","Healthcare","Retail",
-"AI","Semiconductors","Cloud","EV","Crypto"
-]
-
-let div=document.getElementById("sectors")
-
-div.innerHTML=""
-
-for(let s of sectors){
-
-let box=document.createElement("div")
-
-box.className="heat "+(Math.random()>0.5?"green":"red")
-
-box.innerText=s
-
-div.appendChild(box)
-
-}
-
-}
-
 async function build(){
 
 let watch=document.getElementById("watchlist")
@@ -375,9 +320,8 @@ watch.innerHTML=""
 heat.innerHTML=""
 
 let prices={}
-let movers=[]
 
-for(let s of symbols){
+for(let s of screenerStocks){
 
 let price=await getPrice(s)
 
@@ -391,16 +335,16 @@ sym.className="symbol"
 sym.onclick=()=>loadChart(s)
 
 let p=document.createElement("td")
-p.innerText=price.toFixed(2)
+p.innerText=price?price.toFixed(2):"-"
 
 let sig=document.createElement("td")
 
-let ai=signal(price,lastPrices[s])
+let sgn=signal(price,lastPrices[s])
 
-sig.innerText=ai
+sig.innerText=sgn
 
-if(ai==="BUY")sig.className="buy"
-if(ai==="SELL")sig.className="sell"
+if(sgn==="BUY")sig.className="buy"
+if(sgn==="SELL")sig.className="sell"
 
 tr.appendChild(sym)
 tr.appendChild(p)
@@ -408,22 +352,9 @@ tr.appendChild(sig)
 
 watch.appendChild(tr)
 
-if(lastPrices[s]){
+if(lastPrices[s] && price!==lastPrices[s]){
 
-let change=price-lastPrices[s]
-
-movers.push({symbol:s,change})
-
-buildHeat(s,price,lastPrices[s])
-
-if(volumeSpike())
-addAlert(s+" volume spike")
-
-if(rsiSignal(price,lastPrices[s])==="BUY")
-addAlert(s+" RSI oversold")
-
-if(vwapSignal()==="BUY")
-addAlert(s+" VWAP breakout")
+addAlert(s+" moved to "+price.toFixed(2))
 
 }
 
@@ -431,51 +362,25 @@ lastPrices[s]=price
 
 }
 
+/* BUILD HEATMAP */
+
+for(let s of heatmapStocks){
+
+let price=await getPrice(s)
+
+if(lastPrices[s]){
+
+buildHeat(s,price,lastPrices[s])
+
+}
+
+lastPrices[s]=price
+
+prices[s]=price
+
+}
+
 buildTicker(prices)
-
-buildMovers(movers)
-
-buildSectors()
-
-}
-
-function buildMovers(movers){
-
-let sorted=[...movers].sort((a,b)=>b.change-a.change)
-
-let gain=document.getElementById("gainers")
-let lose=document.getElementById("losers")
-
-gain.innerHTML="<b>Top Gainers</b>"
-lose.innerHTML="<b>Top Losers</b>"
-
-sorted.slice(0,5).forEach(s=>{
-
-gain.innerHTML+=`<div class="buy">${s.symbol} ${s.change.toFixed(2)}</div>`
-
-})
-
-sorted.slice(-5).forEach(s=>{
-
-lose.innerHTML+=`<div class="sell">${s.symbol} ${s.change.toFixed(2)}</div>`
-
-})
-
-}
-
-function toggleTheme(){
-
-if(document.body.style.background=="white"){
-
-document.body.style.background="#0b0b0b"
-document.body.style.color="white"
-
-}else{
-
-document.body.style.background="white"
-document.body.style.color="black"
-
-}
 
 }
 
@@ -485,9 +390,8 @@ setInterval(build,20000)
 
 loadChart("AAPL")
 
-loadMultiCharts()
-
 </script>
 
 </body>
+
 </html>
