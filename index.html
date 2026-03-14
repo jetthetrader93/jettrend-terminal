@@ -4,6 +4,7 @@
 <head>
 
 <title>JetTrend AI Terminal</title>
+
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
@@ -52,10 +53,9 @@ padding:15px;
 .topbar{
 display:flex;
 justify-content:space-between;
+align-items:center;
 margin-bottom:10px;
 }
-
-/* TICKER */
 
 .ticker{
 display:flex;
@@ -69,19 +69,19 @@ color:#aaa;
 .metrics{
 display:grid;
 grid-template-columns:repeat(3,1fr);
-gap:10px;
-margin-bottom:12px;
+gap:12px;
+margin-bottom:15px;
 }
 
 .metric{
-background:#141414;
-padding:14px;
-border-radius:6px;
+background:#131313;
+padding:16px;
+border-radius:8px;
 border:1px solid #1f1f1f;
 }
 
 .metric span{
-font-size:22px;
+font-size:26px;
 font-weight:600;
 }
 
@@ -116,7 +116,7 @@ color:#00ff9c;
 .buy{color:#00ff9c}
 .sell{color:#ff4d4d}
 
-/* ALERTS */
+/* ALERT PANEL */
 
 .right{
 position:fixed;
@@ -153,23 +153,18 @@ height:420px;
 <!-- SIDEBAR -->
 
 <div class="sidebar">
-
 <div>📊</div>
 <div>🔎</div>
 <div>📈</div>
 <div>⚡</div>
 <div>⚙️</div>
-
 </div>
 
 <!-- ALERTS -->
 
 <div class="right">
-
 <h3>Alerts</h3>
-
 <div id="alerts"></div>
-
 </div>
 
 <!-- MAIN -->
@@ -200,7 +195,7 @@ AI Signal Strength<br>
 
 <div class="metric">
 Momentum Ratio<br>
-<span id="ratio">0.00</span>
+<span id="ratio">0</span>
 </div>
 
 </div>
@@ -227,7 +222,7 @@ Momentum Ratio<br>
 
 <script>
 
-/* ONLY 5 SCANNER STOCKS */
+/* SCANNER STOCKS */
 
 const stocks=[
 "AAPL",
@@ -240,21 +235,35 @@ const stocks=[
 let history={}
 let lastPrice={}
 
-/* GET PRICE */
+/* SAFE PRICE FETCH */
 
 async function getPrice(symbol){
 
-const res=await fetch(
+try{
+
+const res = await fetch(
 `https://curly-dream-6189.jetthetrader93.workers.dev/?symbol=${symbol}`
 )
 
-const data=await res.json()
+const data = await res.json()
 
-return parseFloat(data.price)
+if(!data || !data.price) return null
+
+const price = Number(data.price)
+
+if(isNaN(price)) return null
+
+return price
+
+}catch{
+
+return null
 
 }
 
-/* EMA CALC */
+}
+
+/* EMA CALCULATION */
 
 function ema(values,period){
 
@@ -262,9 +271,7 @@ let k=2/(period+1)
 let ema=values[0]
 
 for(let i=1;i<values.length;i++){
-
 ema=values[i]*k+ema*(1-k)
-
 }
 
 return ema
@@ -287,6 +294,18 @@ return "NEUTRAL"
 
 }
 
+/* ALERT */
+
+function addAlert(text){
+
+let div=document.createElement("div")
+div.className="alert"
+div.innerText=text
+
+document.getElementById("alerts").prepend(div)
+
+}
+
 /* CHART */
 
 function loadChart(symbol){
@@ -304,29 +323,20 @@ height:420
 
 }
 
-/* ALERT */
-
-function addAlert(text){
-
-let div=document.createElement("div")
-div.className="alert"
-div.innerText=text
-
-document.getElementById("alerts").prepend(div)
-
-}
-
 /* TICKER */
 
 function buildTicker(data){
 
 let ticker=document.getElementById("ticker")
+
 ticker.innerHTML=""
 
 for(let s of ["SPY","QQQ","DIA"]){
 
 let d=document.createElement("div")
-d.innerText=s+" "+(data[s]??"-")
+
+d.innerText = s + " " + (data[s] ? data[s].toFixed(2) : "-")
+
 ticker.appendChild(d)
 
 }
@@ -352,7 +362,7 @@ prices[s]=price
 
 if(!history[s]) history[s]=[]
 
-history[s].push(price)
+if(price) history[s].push(price)
 
 if(history[s].length>50) history[s].shift()
 
@@ -372,21 +382,35 @@ sym.className="symbol"
 sym.onclick=()=>loadChart(s)
 
 let p=document.createElement("td")
-p.innerText=price.toFixed(2)
+p.innerText=price?price.toFixed(2):"-"
 
 let sig=document.createElement("td")
 sig.innerText=signal
 
-if(signal==="BUY") sig.className="buy"
-if(signal==="SELL") sig.className="sell"
+if(signal==="BUY"){
+sig.className="buy"
+sig.innerText="▲ BUY"
+}
 
-/* FLOW STYLE COLUMN */
+if(signal==="SELL"){
+sig.className="sell"
+sig.innerText="▼ SELL"
+}
+
+/* FLOW COLUMN */
 
 let flow=document.createElement("td")
 
-let flows=["Sweep","Block","Split"]
+const flows=["Sweep","Block","Split","Momentum"]
 
-flow.innerText=flows[Math.floor(Math.random()*3)]
+let f=flows[Math.floor(Math.random()*flows.length)]
+
+flow.innerText=f
+
+if(f==="Sweep") flow.style.color="#00ff9c"
+if(f==="Block") flow.style.color="#5dafff"
+if(f==="Split") flow.style.color="#ffd166"
+if(f==="Momentum") flow.style.color="#ff4d4d"
 
 tr.appendChild(time)
 tr.appendChild(sym)
@@ -396,10 +420,8 @@ tr.appendChild(flow)
 
 table.appendChild(tr)
 
-if(lastPrice[s] && price!==lastPrice[s]){
-
+if(lastPrice[s] && price && price!==lastPrice[s]){
 addAlert(s+" moved to "+price.toFixed(2))
-
 }
 
 lastPrice[s]=price
@@ -431,4 +453,5 @@ loadChart("AAPL")
 </script>
 
 </body>
+
 </html>
