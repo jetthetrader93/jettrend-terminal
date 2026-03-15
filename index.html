@@ -17,17 +17,15 @@ background:#0b0b0b;
 color:white;
 }
 
-/* LAYOUT */
-
 .container{
 display:grid;
 grid-template-columns:70px 1fr 360px;
-grid-template-rows:60px 40px 80px 1fr;
+grid-template-rows:60px 80px 1fr;
 height:100vh;
 }
 
 .sidebar{
-grid-row:1/5;
+grid-row:1/4;
 background:#111;
 text-align:center;
 padding-top:20px;
@@ -51,18 +49,6 @@ display:flex;
 align-items:center;
 padding-left:20px;
 border-bottom:1px solid #333;
-}
-
-.ticker{
-grid-column:2/4;
-background:#0f0f0f;
-border-bottom:1px solid #222;
-}
-
-.ticker span{
-padding:10px 20px;
-display:inline-block;
-color:#00ff9c;
 }
 
 .gauges{
@@ -121,20 +107,31 @@ font-weight:bold;
 color:#00ff9c;
 }
 
-.buy{color:#00ff9c}
-.sell{color:#ff4d4d}
+.buy{
+color:#00ff9c;
+font-weight:bold;
+}
+
+.sell{
+color:#ff4d4d;
+font-weight:bold;
+}
+
+tr:hover{
+background:#1a1a1a;
+}
 
 /* HEATMAP */
 
 .heatmap{
 display:grid;
 grid-template-columns:repeat(3,1fr);
-gap:5px;
+gap:6px;
 margin-bottom:20px;
 }
 
 .heatmap div{
-padding:20px;
+padding:18px;
 text-align:center;
 border-radius:4px;
 font-weight:bold;
@@ -189,8 +186,6 @@ display:none;
 
 <div class="topbar">JetTrend AI Terminal</div>
 
-<div class="ticker" id="ticker"></div>
-
 <div class="gauges">
 
 <div class="gauge">
@@ -244,7 +239,7 @@ AI Strength
 
 /* SYMBOLS */
 
-const symbols = [
+const symbols=[
 "AAPL","NVDA","TSLA","AMD","META","MSFT",
 "AMZN","GOOGL","SPY"
 ]
@@ -258,16 +253,16 @@ symbols.forEach(s=>history[s]=[])
 
 function ema(data,period){
 
-if(data.length < period) return null
+if(data.length<period) return null
 
-let k = 2/(period+1)
-let ema = data[data.length-period]
+let k=2/(period+1)
+let e=data[data.length-period]
 
-for(let i=data.length-period+1;i<data.length;i++){
-ema = data[i]*k + ema*(1-k)
-}
+for(let i=data.length-period+1;i<data.length;i++)
+e=data[i]*k+e*(1-k)
 
-return ema
+return e
+
 }
 
 /* SIGNAL ENGINE */
@@ -280,12 +275,13 @@ let e9=ema(h,9)
 let e21=ema(h,21)
 let e120=ema(h,120)
 
-if(!e9 || !e21 || !e120) return "NEUTRAL"
+if(!e9||!e21||!e120) return "NEUTRAL"
 
-if(e9>e21 && e9>e120) return "BUY"
-if(e9<e21 && e9<e120) return "SELL"
+if(e9>e21&&e9>e120) return "BUY"
+if(e9<e21&&e9<e120) return "SELL"
 
 return "NEUTRAL"
+
 }
 
 /* SENTIMENT */
@@ -306,7 +302,8 @@ if(buy>sell) sentiment="Bullish"
 if(sell>buy) sentiment="Bearish"
 
 document.getElementById("sentiment").innerText=sentiment
-document.getElementById("strength").innerText=(buy-sell)
+document.getElementById("strength").innerText=buy-sell
+
 }
 
 /* ALERT */
@@ -318,9 +315,7 @@ if(lastSignal[symbol]===signal) return
 lastSignal[symbol]=signal
 
 let div=document.createElement("div")
-
 div.className="alert"
-
 div.innerText=`${symbol} ${signal} signal`
 
 document.getElementById("alerts").prepend(div)
@@ -334,6 +329,9 @@ updateSentiment()
 function updateScanner(symbol,price){
 
 history[symbol].push(price)
+
+if(history[symbol].length>200)
+history[symbol].shift()
 
 let signal=signalEngine(history[symbol])
 
@@ -365,93 +363,40 @@ document.getElementById("price_"+symbol).innerText=price.toFixed(2)
 let sig=document.getElementById("signal_"+symbol)
 
 sig.innerText=signal
-
 sig.className=signal==="BUY"?"buy":signal==="SELL"?"sell":""
 
 document.getElementById("breakout_"+symbol).innerText=breakout+"%"
 
 }
 
-/* WEBSOCKET */
+/* WEBSOCKET DATA */
 
-const socket = new WebSocket(
-"wss://ws.finnhub.io?token=c3qcq1hr01qgdhqbtk80"
-)
+const socket=new WebSocket("wss://ws.finnhub.io?token=c3qcq1hr01qgdhqbtk80")
 
-socket.onopen = () => {
+socket.onopen=function(){
 
 symbols.forEach(s=>{
-
 socket.send(JSON.stringify({
-"type":"subscribe",
-"symbol":s
+type:"subscribe",
+symbol:s
 }))
-
 })
 
 }
 
-socket.onmessage = (msg)=>{
+socket.onmessage=function(event){
 
-let data=JSON.parse(msg.data)
+let data=JSON.parse(event.data)
 
-if(!data.data) return
+if(data.type!=="trade") return
 
 data.data.forEach(t=>{
-
 updateScanner(t.s,t.p)
-
 })
 
 }
 
-/* CHART */
+/* BACKUP DATA (if websocket slow) */
 
-function loadChart(symbol){
-
-document.getElementById("chart").style.display="block"
-
-document.getElementById("chart").innerHTML=""
-
-new TradingView.widget({
-
-container_id:"chart",
-symbol:symbol,
-interval:"5",
-theme:"dark",
-width:"100%",
-height:500
-
-})
-
-}
-
-/* HEATMAP */
-
-function buildHeatmap(){
-
-let html=""
-
-symbols.slice(0,9).forEach(s=>{
-
-let move=Math.random()*4-2
-
-let color=move>0?"#0a3":"#a00"
-
-html+=`<div style="background:${color}">
-${s}<br>${move.toFixed(2)}%
-</div>`
-
-})
-
-document.getElementById("heatmap").innerHTML=html
-
-}
-
-buildHeatmap()
-
-</script>
-
-</body>
-</html>
+setInterval(
 ```
