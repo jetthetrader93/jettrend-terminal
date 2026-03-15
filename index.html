@@ -1,9 +1,10 @@
 ```html
 <!DOCTYPE html>
 <html>
+
 <head>
 
-<title>JetTrend AI Terminal</title>
+<title>JetTrend AI Terminal V2</title>
 
 <script src="https://s3.tradingview.com/tv.js"></script>
 
@@ -18,10 +19,12 @@ color:white;
 
 .container{
 display:grid;
-grid-template-columns:70px 1fr 360px;
+grid-template-columns:70px 1fr 380px;
 grid-template-rows:60px 80px 1fr;
 height:100vh;
 }
+
+/* sidebar */
 
 .sidebar{
 grid-row:1/4;
@@ -41,6 +44,8 @@ opacity:1;
 color:#00ff9c;
 }
 
+/* header */
+
 .topbar{
 grid-column:2/4;
 background:#141414;
@@ -49,6 +54,8 @@ align-items:center;
 padding-left:20px;
 border-bottom:1px solid #333;
 }
+
+/* gauges */
 
 .gauges{
 grid-column:2/4;
@@ -66,6 +73,8 @@ padding:10px;
 text-align:center;
 }
 
+/* layout */
+
 .main{
 grid-column:2/3;
 padding:15px;
@@ -79,6 +88,8 @@ border-left:1px solid #333;
 padding:15px;
 overflow:auto;
 }
+
+/* table */
 
 table{
 width:100%;
@@ -106,19 +117,16 @@ font-weight:bold;
 color:#00ff9c;
 }
 
-.buy{
-color:#00ff9c;
-font-weight:bold;
-}
-
-.sell{
-color:#ff4d4d;
-font-weight:bold;
-}
+.buy{color:#00ff9c;font-weight:bold;}
+.sell{color:#ff4d4d;font-weight:bold;}
+.strongbuy{color:#00ff9c;font-weight:bold;font-size:15px;}
+.strongsell{color:#ff3b3b;font-weight:bold;font-size:15px;}
 
 tr:hover{
 background:#1a1a1a;
 }
+
+/* heatmap */
 
 .heatmap{
 display:grid;
@@ -134,31 +142,21 @@ border-radius:4px;
 font-weight:bold;
 }
 
-#alerts{
-position:fixed;
-top:20px;
-right:20px;
-width:260px;
-z-index:999;
+/* movers */
+
+.movers{
+margin-top:20px;
 }
 
-.alert{
-background:#121212;
-border-left:4px solid #00ff9c;
-padding:10px;
-margin-bottom:10px;
-border-radius:4px;
-animation:fade 5s forwards;
+.movers div{
+padding:8px;
+border-bottom:1px solid #222;
 }
 
-@keyframes fade{
-0%{opacity:1}
-80%{opacity:1}
-100%{opacity:0}
-}
+/* chart */
 
 #chart{
-height:500px;
+height:420px;
 margin-top:20px;
 display:none;
 }
@@ -168,8 +166,6 @@ display:none;
 </head>
 
 <body>
-
-<div id="alerts"></div>
 
 <div class="container">
 
@@ -206,6 +202,7 @@ AI Strength
 <th>Symbol</th>
 <th>Price</th>
 <th>Signal</th>
+<th>AI%</th>
 <th>Breakout%</th>
 </tr>
 </thead>
@@ -223,8 +220,11 @@ AI Strength
 <h3>Sector Heatmap</h3>
 <div class="heatmap" id="heatmap"></div>
 
-<h3>Watchlist</h3>
-<div id="watchlist"></div>
+<h3>Top Gainers</h3>
+<div class="movers" id="gainers"></div>
+
+<h3>Top Losers</h3>
+<div class="movers" id="losers"></div>
 
 </div>
 
@@ -233,8 +233,7 @@ AI Strength
 <script>
 
 const symbols=[
-"AAPL","NVDA","TSLA","AMD","META","MSFT",
-"AMZN","GOOGL","SPY"
+"AAPL","NVDA","TSLA","AMD","META","MSFT","AMZN","GOOGL","SPY"
 ]
 
 let history={}
@@ -242,36 +241,45 @@ let lastSignal={}
 
 symbols.forEach(s=>history[s]=[])
 
-function ema(data,period){
+/* EMA */
 
-if(data.length<period) return null
+function ema(data,p){
 
-let k=2/(period+1)
-let e=data[data.length-period]
+if(data.length<p) return null
 
-for(let i=data.length-period+1;i<data.length;i++)
+let k=2/(p+1)
+let e=data[data.length-p]
+
+for(let i=data.length-p+1;i<data.length;i++)
 e=data[i]*k+e*(1-k)
 
 return e
 
 }
 
+/* SIGNAL ENGINE */
+
 function signalEngine(h){
 
-if(h.length<30) return "NEUTRAL"
+if(h.length<25) return "NEUTRAL"
 
 let e9=ema(h,9)
 let e21=ema(h,21)
-let e120=ema(h,120)
+let e50=ema(h,50)
 
-if(!e9||!e21||!e120) return "NEUTRAL"
+if(!e9||!e21||!e50) return "NEUTRAL"
 
-if(e9>e21&&e9>e120) return "BUY"
-if(e9<e21&&e9<e120) return "SELL"
+if(e9>e21 && e21>e50) return "STRONG BUY"
+if(e9<e21 && e21<e50) return "STRONG SELL"
+
+if(e9>e21) return "BUY"
+if(e9<e21) return "SELL"
 
 return "NEUTRAL"
 
 }
+
+/* SENTIMENT */
 
 function updateSentiment(){
 
@@ -279,8 +287,8 @@ let buy=0
 let sell=0
 
 Object.values(lastSignal).forEach(s=>{
-if(s==="BUY") buy++
-if(s==="SELL") sell++
+if(s.includes("BUY")) buy++
+if(s.includes("SELL")) sell++
 })
 
 let sentiment="Neutral"
@@ -293,21 +301,7 @@ document.getElementById("strength").innerText=buy-sell
 
 }
 
-function alertPopup(symbol,signal){
-
-if(lastSignal[symbol]===signal) return
-
-lastSignal[symbol]=signal
-
-let div=document.createElement("div")
-div.className="alert"
-div.innerText=`${symbol} ${signal} signal`
-
-document.getElementById("alerts").prepend(div)
-
-updateSentiment()
-
-}
+/* SCANNER */
 
 function updateScanner(symbol,price){
 
@@ -318,10 +312,10 @@ history[symbol].shift()
 
 let signal=signalEngine(history[symbol])
 
-if(signal!=="NEUTRAL")
-alertPopup(symbol,signal)
+lastSignal[symbol]=signal
 
 let breakout=Math.floor(Math.random()*100)
+let ai=Math.floor(Math.random()*100)
 
 let row=document.getElementById("row_"+symbol)
 
@@ -334,7 +328,8 @@ row.innerHTML=`
 <td class="symbol" onclick="loadChart('${symbol}')">${symbol}</td>
 <td id="price_${symbol}"></td>
 <td id="signal_${symbol}"></td>
-<td id="breakout_${symbol}"></td>
+<td id="ai_${symbol}"></td>
+<td id="break_${symbol}"></td>
 `
 
 document.getElementById("scanner").appendChild(row)
@@ -346,13 +341,21 @@ document.getElementById("price_"+symbol).innerText=price.toFixed(2)
 let sig=document.getElementById("signal_"+symbol)
 
 sig.innerText=signal
-sig.className=signal==="BUY"?"buy":signal==="SELL"?"sell":""
 
-document.getElementById("breakout_"+symbol).innerText=breakout+"%"
+sig.className=
+signal==="BUY"?"buy":
+signal==="SELL"?"sell":
+signal==="STRONG BUY"?"strongbuy":
+signal==="STRONG SELL"?"strongsell":""
+
+document.getElementById("ai_"+symbol).innerText=ai+"%"
+document.getElementById("break_"+symbol).innerText=breakout+"%"
+
+updateSentiment()
 
 }
 
-/* populate scanner immediately */
+/* populate data */
 
 symbols.forEach(symbol=>{
 
@@ -361,23 +364,7 @@ updateScanner(symbol,price)
 
 })
 
-function loadChart(symbol){
-
-document.getElementById("chart").style.display="block"
-document.getElementById("chart").innerHTML=""
-
-new TradingView.widget({
-
-container_id:"chart",
-symbol:symbol,
-interval:"5",
-theme:"dark",
-width:"100%",
-height:500
-
-})
-
-}
+/* heatmap */
 
 function buildHeatmap(){
 
@@ -401,6 +388,54 @@ document.getElementById("heatmap").innerHTML=html
 }
 
 buildHeatmap()
+
+/* movers */
+
+function buildMovers(){
+
+let gainers=""
+let losers=""
+
+symbols.forEach(s=>{
+
+let move=(Math.random()*6-3).toFixed(2)
+
+let row=`${s} ${move}%`
+
+if(move>0)
+gainers+=`<div>${row}</div>`
+else
+losers+=`<div>${row}</div>`
+
+})
+
+document.getElementById("gainers").innerHTML=gainers
+document.getElementById("losers").innerHTML=losers
+
+}
+
+buildMovers()
+
+/* chart */
+
+function loadChart(symbol){
+
+document.getElementById("chart").style.display="block"
+
+document.getElementById("chart").innerHTML=""
+
+new TradingView.widget({
+
+container_id:"chart",
+symbol:symbol,
+interval:"5",
+theme:"dark",
+width:"100%",
+height:420
+
+})
+
+}
 
 </script>
 
