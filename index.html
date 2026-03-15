@@ -1,7 +1,6 @@
 ```html
 <!DOCTYPE html>
 <html>
-
 <head>
 
 <title>JetTrend AI Terminal</title>
@@ -121,8 +120,6 @@ tr:hover{
 background:#1a1a1a;
 }
 
-/* heatmap */
-
 .heatmap{
 display:grid;
 grid-template-columns:repeat(3,1fr);
@@ -136,8 +133,6 @@ text-align:center;
 border-radius:4px;
 font-weight:bold;
 }
-
-/* alerts */
 
 #alerts{
 position:fixed;
@@ -237,8 +232,6 @@ AI Strength
 
 <script>
 
-/* symbols */
-
 const symbols=[
 "AAPL","NVDA","TSLA","AMD","META","MSFT",
 "AMZN","GOOGL","SPY"
@@ -248,8 +241,6 @@ let history={}
 let lastSignal={}
 
 symbols.forEach(s=>history[s]=[])
-
-/* ema */
 
 function ema(data,period){
 
@@ -264,8 +255,6 @@ e=data[i]*k+e*(1-k)
 return e
 
 }
-
-/* signal engine */
 
 function signalEngine(h){
 
@@ -283,8 +272,6 @@ if(e9<e21&&e9<e120) return "SELL"
 return "NEUTRAL"
 
 }
-
-/* sentiment */
 
 function updateSentiment(){
 
@@ -306,8 +293,6 @@ document.getElementById("strength").innerText=buy-sell
 
 }
 
-/* alert */
-
 function alertPopup(symbol,signal){
 
 if(lastSignal[symbol]===signal) return
@@ -323,8 +308,6 @@ document.getElementById("alerts").prepend(div)
 updateSentiment()
 
 }
-
-/* scanner */
 
 function updateScanner(symbol,price){
 
@@ -369,9 +352,7 @@ document.getElementById("breakout_"+symbol).innerText=breakout+"%"
 
 }
 
-/* guaranteed rows on load */
-
-setTimeout(()=>{
+/* populate scanner immediately */
 
 symbols.forEach(symbol=>{
 
@@ -379,10 +360,6 @@ let price=100+Math.random()*200
 updateScanner(symbol,price)
 
 })
-
-},1000)
-
-/* chart */
 
 function loadChart(symbol){
 
@@ -401,8 +378,6 @@ height:500
 })
 
 }
-
-/* heatmap */
 
 function buildHeatmap(){
 
