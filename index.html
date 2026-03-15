@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html>
 
@@ -255,18 +256,18 @@ symbols.forEach(s=>history[s]=[])
 
 /* EMA */
 
-function ema(data,p){
+function ema(data,period){
 
-if(data.length<p) return data[data.length-1]
+if(data.length < period) return null
 
-let k=2/(p+1)
-let e=data[0]
+let k = 2/(period+1)
+let ema = data[data.length-period]
 
-for(let i=1;i<data.length;i++)
-e=data[i]*k+e*(1-k)
+for(let i=data.length-period+1;i<data.length;i++){
+ema = data[i]*k + ema*(1-k)
+}
 
-return e
-
+return ema
 }
 
 /* SIGNAL ENGINE */
@@ -275,15 +276,37 @@ function signalEngine(h){
 
 if(h.length<30) return "NEUTRAL"
 
-let e9=ema(h.slice(-9),9)
-let e21=ema(h.slice(-21),21)
-let e120=ema(h.slice(-120),120)
+let e9=ema(h,9)
+let e21=ema(h,21)
+let e120=ema(h,120)
+
+if(!e9 || !e21 || !e120) return "NEUTRAL"
 
 if(e9>e21 && e9>e120) return "BUY"
 if(e9<e21 && e9<e120) return "SELL"
 
 return "NEUTRAL"
+}
 
+/* SENTIMENT */
+
+function updateSentiment(){
+
+let buy=0
+let sell=0
+
+Object.values(lastSignal).forEach(s=>{
+if(s==="BUY") buy++
+if(s==="SELL") sell++
+})
+
+let sentiment="Neutral"
+
+if(buy>sell) sentiment="Bullish"
+if(sell>buy) sentiment="Bearish"
+
+document.getElementById("sentiment").innerText=sentiment
+document.getElementById("strength").innerText=(buy-sell)
 }
 
 /* ALERT */
@@ -302,6 +325,8 @@ div.innerText=`${symbol} ${signal} signal`
 
 document.getElementById("alerts").prepend(div)
 
+updateSentiment()
+
 }
 
 /* UPDATE SCANNER */
@@ -317,20 +342,37 @@ alertPopup(symbol,signal)
 
 let breakout=Math.floor(Math.random()*100)
 
-let row=`
-<tr>
+let row=document.getElementById("row_"+symbol)
+
+if(!row){
+
+row=document.createElement("tr")
+row.id="row_"+symbol
+
+row.innerHTML=`
 <td class="symbol" onclick="loadChart('${symbol}')">${symbol}</td>
-<td>${price.toFixed(2)}</td>
-<td class="${signal==="BUY"?"buy":"sell"}">${signal}</td>
-<td>${breakout}%</td>
-</tr>
+<td id="price_${symbol}"></td>
+<td id="signal_${symbol}"></td>
+<td id="breakout_${symbol}"></td>
 `
 
-document.getElementById("scanner").innerHTML+=row
+document.getElementById("scanner").appendChild(row)
 
 }
 
-/* WEBSOCKET DATA */
+document.getElementById("price_"+symbol).innerText=price.toFixed(2)
+
+let sig=document.getElementById("signal_"+symbol)
+
+sig.innerText=signal
+
+sig.className=signal==="BUY"?"buy":signal==="SELL"?"sell":""
+
+document.getElementById("breakout_"+symbol).innerText=breakout+"%"
+
+}
+
+/* WEBSOCKET */
 
 const socket = new WebSocket(
 "wss://ws.finnhub.io?token=c3qcq1hr01qgdhqbtk80"
@@ -412,3 +454,4 @@ buildHeatmap()
 
 </body>
 </html>
+```
