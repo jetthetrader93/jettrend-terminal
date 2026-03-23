@@ -1,444 +1,243 @@
-```html
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zero Impulse Trading Masterclass</title>
 
-<title>JetTrend AI Terminal V2</title>
-
-<script src="https://s3.tradingview.com/tv.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 
 <style>
-
-body{
-margin:0;
-font-family:Arial;
-background:#0b0b0b;
-color:white;
+* {
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:'Inter', sans-serif;
 }
 
-.container{
-display:grid;
-grid-template-columns:70px 1fr 380px;
-grid-template-rows:60px 80px 1fr;
-height:100vh;
+body {
+  background: radial-gradient(circle at top, #1a1a2e, #050507);
+  color:white;
 }
 
-/* sidebar */
-
-.sidebar{
-grid-row:1/4;
-background:#111;
-text-align:center;
-padding-top:20px;
+/* HERO */
+.hero {
+  text-align:center;
+  padding:120px 20px;
 }
 
-.sidebar div{
-padding:20px;
-cursor:pointer;
-opacity:.7;
+.hero h1 {
+  font-size:56px;
 }
 
-.sidebar div:hover{
-opacity:1;
-color:#00ff9c;
+.hero p {
+  color:#aaa;
+  margin-top:15px;
 }
 
-/* header */
-
-.topbar{
-grid-column:2/4;
-background:#141414;
-display:flex;
-align-items:center;
-padding-left:20px;
-border-bottom:1px solid #333;
+.highlight {
+  color:#00ffcc;
+  margin-top:10px;
+  font-weight:600;
 }
 
-/* gauges */
-
-.gauges{
-grid-column:2/4;
-display:flex;
-gap:20px;
-padding:10px;
-background:#111;
+/* BUTTON */
+.btn {
+  margin-top:30px;
+  padding:15px 35px;
+  border:none;
+  border-radius:12px;
+  background:linear-gradient(135deg,#00ffcc,#00aaff);
+  font-weight:bold;
+  cursor:pointer;
+  box-shadow:0 0 20px rgba(0,255,204,0.3);
+  transition:0.3s;
 }
 
-.gauge{
-flex:1;
-background:#151515;
-border-radius:6px;
-padding:10px;
-text-align:center;
+.btn:hover {
+  transform:scale(1.05);
 }
 
-/* layout */
-
-.main{
-grid-column:2/3;
-padding:15px;
-overflow:auto;
+/* SECTIONS */
+.section {
+  padding:100px 20px;
+  text-align:center;
+  max-width:1100px;
+  margin:auto;
 }
 
-.right{
-grid-column:3/4;
-background:#141414;
-border-left:1px solid #333;
-padding:15px;
-overflow:auto;
+.cards {
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:25px;
+  margin-top:40px;
 }
 
-/* table */
-
-table{
-width:100%;
-border-collapse:collapse;
+.card {
+  background:#0e0e14;
+  padding:30px;
+  width:260px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,0.05);
+  transition:0.3s;
 }
 
-th{
-text-align:left;
-padding:10px;
-border-bottom:1px solid #333;
-color:#aaa;
+.card:hover {
+  transform:translateY(-10px);
+  box-shadow:0 20px 40px rgba(0,255,204,0.1);
 }
 
-td{
-padding:10px;
-border-bottom:1px solid #222;
+/* DASHBOARD */
+.dashboard {
+  background:#0e0e14;
+  padding:30px;
+  border-radius:16px;
+  margin-top:40px;
+  box-shadow:0 0 40px rgba(0,255,204,0.05);
 }
 
-.symbol{
-cursor:pointer;
-font-weight:bold;
+.trade {
+  display:flex;
+  justify-content:space-between;
+  padding:10px 0;
+  border-bottom:1px solid rgba(255,255,255,0.05);
 }
 
-.symbol:hover{
-color:#00ff9c;
+.green {color:#00ffcc;}
+.red {color:#ff4d6d;}
+
+/* TEXT */
+h2 {
+  font-size:34px;
 }
 
-.buy{color:#00ff9c;font-weight:bold;}
-.sell{color:#ff4d4d;font-weight:bold;}
-.strongbuy{color:#00ff9c;font-weight:bold;font-size:15px;}
-.strongsell{color:#ff3b3b;font-weight:bold;font-size:15px;}
-
-tr:hover{
-background:#1a1a1a;
+p {
+  line-height:1.7;
 }
 
-/* heatmap */
-
-.heatmap{
-display:grid;
-grid-template-columns:repeat(3,1fr);
-gap:6px;
-margin-bottom:20px;
+/* PRICE BOX */
+.price-box {
+  background:#0e0e14;
+  padding:40px;
+  border-radius:20px;
+  box-shadow:0 0 60px rgba(0,255,204,0.08);
+  max-width:400px;
+  margin:auto;
 }
 
-.heatmap div{
-padding:18px;
-text-align:center;
-border-radius:4px;
-font-weight:bold;
+/* FOOTER */
+.footer {
+  text-align:center;
+  padding:40px;
+  color:#666;
 }
-
-/* movers */
-
-.movers{
-margin-top:20px;
-}
-
-.movers div{
-padding:8px;
-border-bottom:1px solid #222;
-}
-
-/* chart */
-
-#chart{
-height:420px;
-margin-top:20px;
-display:none;
-}
-
 </style>
-
 </head>
 
 <body>
 
-<div class="container">
+<!-- HERO -->
+<div class="hero">
+  <h1>Trade With Precision. Eliminate Emotion.</h1>
+  <p>Learn the exact system used to trade profitably in futures and options.</p>
+  <p class="highlight">Built from real market experience & structured execution</p>
 
-<div class="sidebar">
-<div>📊</div>
-<div>🔎</div>
-<div>⚡</div>
+  <a href="https://www.jotform.com/form/232637843738063" target="_blank">
+    <button class="btn">Secure Your Spot</button>
+  </a>
 </div>
 
-<div class="topbar">JetTrend AI Terminal</div>
+<!-- WHAT YOU GET -->
+<div class="section">
+  <h2>What You Get Inside</h2>
 
-<div class="gauges">
-
-<div class="gauge">
-Trend Sentiment
-<h2 id="sentiment">Neutral</h2>
+  <div class="cards">
+    <div class="card">📊 Entry Model</div>
+    <div class="card">⚡ Zero Impulse Indicator</div>
+    <div class="card">💰 Risk Management</div>
+    <div class="card">📈 Futures (NQ / ES)</div>
+    <div class="card">🎯 Live Trades</div>
+    <div class="card">🔐 Private Community</div>
+  </div>
 </div>
 
-<div class="gauge">
-AI Strength
-<h2 id="strength">0</h2>
+<!-- ABOUT -->
+<div class="section">
+  <h2>About JetTradez</h2>
+
+  <p>
+  Led by Juan Ayala, a profitable trader with real market experience and involvement with Avrio Investment and Cove Street Capital.
+  </p>
+
+  <p style="margin-top:20px;">
+  This mentorship teaches students and interns how to trade using structured execution and the Zero Impulse indicator for price action and support/resistance.
+  </p>
 </div>
 
+<!-- DESCRIPTION -->
+<div class="section">
+  <h2>Inside The Program</h2>
+
+  <p>
+  This program teaches everything learned from real trading experience, focusing on eliminating emotional decisions and replacing them with structured execution and discipline.
+  </p>
+
+  <p style="margin-top:20px;">
+  You will learn market structure, futures setups, and a repeatable system designed for consistency.
+  </p>
 </div>
 
-<div class="main">
+<!-- DASHBOARD -->
+<div class="section">
+  <h2>Live Trade Simulation</h2>
 
-<h3>AI Scanner</h3>
-
-<table>
-
-<thead>
-<tr>
-<th>Symbol</th>
-<th>Price</th>
-<th>Signal</th>
-<th>AI%</th>
-<th>Breakout%</th>
-</tr>
-</thead>
-
-<tbody id="scanner"></tbody>
-
-</table>
-
-<div id="chart"></div>
-
+  <div class="dashboard">
+    <div class="trade"><span>NQ Breakout</span><span class="green">+$1,240</span></div>
+    <div class="trade"><span>ES Short</span><span class="green">+$860</span></div>
+    <div class="trade"><span>BTC Loss</span><span class="red">-$210</span></div>
+    <div class="trade"><span>NQ Continuation</span><span class="green">+$1,540</span></div>
+  </div>
 </div>
 
-<div class="right">
+<!-- TESTIMONIALS -->
+<div class="section">
+  <h2>Trader Results</h2>
 
-<h3>Sector Heatmap</h3>
-<div class="heatmap" id="heatmap"></div>
-
-<h3>Top Gainers</h3>
-<div class="movers" id="gainers"></div>
-
-<h3>Top Losers</h3>
-<div class="movers" id="losers"></div>
-
+  <div class="cards">
+    <div class="card">"Passed my prop firm in 2 weeks."<br><br>- Daniel R.</div>
+    <div class="card">"Entry model is insanely accurate."<br><br>- Marcus L.</div>
+    <div class="card">"I stopped overtrading completely."<br><br>- Kevin S.</div>
+  </div>
 </div>
 
+<!-- PRICING -->
+<div class="section">
+  <h2>Everything Included</h2>
+
+  <div class="price-box">
+    <p>Full System – $300 Value</p>
+    <p>Trade Breakdowns – $200</p>
+    <p>Risk Model – $150</p>
+    <p>Community Access – $100</p>
+
+    <h3 class="highlight" style="margin-top:20px;">$750+ Value</h3>
+    <h2 style="margin-top:10px;">Today: $300</h2>
+
+    <p style="color:#ff4d6d; margin-top:10px;">
+      ⚠ Only 17 spots remaining
+    </p>
+
+    <a href="https://www.jotform.com/form/232637843738063" target="_blank">
+      <button class="btn">Join Now</button>
+    </a>
+  </div>
 </div>
 
-<script>
-
-const symbols=[
-"AAPL","NVDA","TSLA","AMD","META","MSFT","AMZN","GOOGL","SPY"
-]
-
-let history={}
-let lastSignal={}
-
-symbols.forEach(s=>history[s]=[])
-
-/* EMA */
-
-function ema(data,p){
-
-if(data.length<p) return null
-
-let k=2/(p+1)
-let e=data[data.length-p]
-
-for(let i=data.length-p+1;i<data.length;i++)
-e=data[i]*k+e*(1-k)
-
-return e
-
-}
-
-/* SIGNAL ENGINE */
-
-function signalEngine(h){
-
-if(h.length<25) return "NEUTRAL"
-
-let e9=ema(h,9)
-let e21=ema(h,21)
-let e50=ema(h,50)
-
-if(!e9||!e21||!e50) return "NEUTRAL"
-
-if(e9>e21 && e21>e50) return "STRONG BUY"
-if(e9<e21 && e21<e50) return "STRONG SELL"
-
-if(e9>e21) return "BUY"
-if(e9<e21) return "SELL"
-
-return "NEUTRAL"
-
-}
-
-/* SENTIMENT */
-
-function updateSentiment(){
-
-let buy=0
-let sell=0
-
-Object.values(lastSignal).forEach(s=>{
-if(s.includes("BUY")) buy++
-if(s.includes("SELL")) sell++
-})
-
-let sentiment="Neutral"
-
-if(buy>sell) sentiment="Bullish"
-if(sell>buy) sentiment="Bearish"
-
-document.getElementById("sentiment").innerText=sentiment
-document.getElementById("strength").innerText=buy-sell
-
-}
-
-/* SCANNER */
-
-function updateScanner(symbol,price){
-
-history[symbol].push(price)
-
-if(history[symbol].length>200)
-history[symbol].shift()
-
-let signal=signalEngine(history[symbol])
-
-lastSignal[symbol]=signal
-
-let breakout=Math.floor(Math.random()*100)
-let ai=Math.floor(Math.random()*100)
-
-let row=document.getElementById("row_"+symbol)
-
-if(!row){
-
-row=document.createElement("tr")
-row.id="row_"+symbol
-
-row.innerHTML=`
-<td class="symbol" onclick="loadChart('${symbol}')">${symbol}</td>
-<td id="price_${symbol}"></td>
-<td id="signal_${symbol}"></td>
-<td id="ai_${symbol}"></td>
-<td id="break_${symbol}"></td>
-`
-
-document.getElementById("scanner").appendChild(row)
-
-}
-
-document.getElementById("price_"+symbol).innerText=price.toFixed(2)
-
-let sig=document.getElementById("signal_"+symbol)
-
-sig.innerText=signal
-
-sig.className=
-signal==="BUY"?"buy":
-signal==="SELL"?"sell":
-signal==="STRONG BUY"?"strongbuy":
-signal==="STRONG SELL"?"strongsell":""
-
-document.getElementById("ai_"+symbol).innerText=ai+"%"
-document.getElementById("break_"+symbol).innerText=breakout+"%"
-
-updateSentiment()
-
-}
-
-/* populate data */
-
-symbols.forEach(symbol=>{
-
-let price=100+Math.random()*200
-updateScanner(symbol,price)
-
-})
-
-/* heatmap */
-
-function buildHeatmap(){
-
-let html=""
-
-symbols.forEach(s=>{
-
-let move=(Math.random()*4-2).toFixed(2)
-let color=move>0?"#0a3":"#a00"
-
-html+=`
-<div style="background:${color}">
-${s}<br>${move}%
+<!-- FOOTER -->
+<div class="footer">
+  © 2026 Zero Impulse Trading Masterclass. All rights reserved.
 </div>
-`
-
-})
-
-document.getElementById("heatmap").innerHTML=html
-
-}
-
-buildHeatmap()
-
-/* movers */
-
-function buildMovers(){
-
-let gainers=""
-let losers=""
-
-symbols.forEach(s=>{
-
-let move=(Math.random()*6-3).toFixed(2)
-
-let row=`${s} ${move}%`
-
-if(move>0)
-gainers+=`<div>${row}</div>`
-else
-losers+=`<div>${row}</div>`
-
-})
-
-document.getElementById("gainers").innerHTML=gainers
-document.getElementById("losers").innerHTML=losers
-
-}
-
-buildMovers()
-
-/* chart */
-
-function loadChart(symbol){
-
-document.getElementById("chart").style.display="block"
-
-document.getElementById("chart").innerHTML=""
-
-new TradingView.widget({
-
-container_id:"chart",
-symbol:symbol,
-interval:"5",
-theme:"dark",
-width:"100%",
-height:420
-
-})
-
-}
-
-</script>
 
 </body>
 </html>
-```
